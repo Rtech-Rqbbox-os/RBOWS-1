@@ -163,7 +163,7 @@ RBOWS 1 is the desktop environment layer of the RQBBOX OS ecosystem:
 
 ## License
 
-MIT © 2026 RhysTech. Part of the RQBBOX OS ecosystem.
+**© 2026 RhysTech. All rights reserved.**  RQBBOX&reg;, RQBBOX MODE&trade;, RBOWS&trade;, RQBBOX LIFE&trade; RhysTech.
 
 <div align="center">
   <br>
