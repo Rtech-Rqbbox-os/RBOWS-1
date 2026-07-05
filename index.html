@@ -473,6 +473,8 @@ const OS = {
   initStartMenu() {
     const tiles = document.getElementById('start-tiles');
     const apps = [
+      { id: 'rqbbox', icon: '🎮', label: 'RQBBOX MODE', color: 'green' },
+      { id: 'rqbboxlife', icon: '🧬', label: 'RQBBOX LIFE', color: 'teal' },
       { id: 'explorer', icon: '📁', label: 'File Explorer', color: 'blue' },
       { id: 'notepad', icon: '📝', label: 'Notepad', color: 'dark' },
       { id: 'calculator', icon: '🔢', label: 'Calculator', color: 'dark' },
@@ -521,6 +523,7 @@ const OS = {
   initDesktop() {
     const icons = document.getElementById('desktop-icons');
     const desktopItems = [
+      { id: 'rqbbox', icon: '🎮', label: 'RQBBOX MODE' },
       { id: 'explorer', icon: '📁', label: 'This PC' },
       { id: 'recycle', icon: '🗑️', label: 'Recycle Bin' },
       { id: 'terminal', icon: '💻', label: 'Terminal' },
@@ -879,6 +882,8 @@ const OS = {
   // ========== APPS ==========
   openApp(appId) {
     const apps = {
+      rqbbox: () => this.openRqbbox(),
+      rqbboxlife: () => this.openRqbboxLife(),
       explorer: () => this.openExplorer(),
       notepad: () => this.openNotepad(),
       calculator: () => this.openCalculator(),
@@ -898,6 +903,97 @@ const OS = {
   openGeneric(title, icon, body) {
     const w = this.createWindow({ title, icon, appId: title.toLowerCase() });
     w.el.querySelector('.window-body').innerHTML = body;
+  },
+
+  // ========== RQBBOX MODE ==========
+  openRqbbox() {
+    const w = this.createWindow({
+      title: 'RQBBOX MODE',
+      icon: '🎮',
+      appId: 'rqbbox',
+      width: 1200,
+      height: 750
+    });
+    const body = w.el.querySelector('.window-body');
+    body.style.padding = '0';
+    body.style.background = '#0a0a0a';
+
+    // Loading state
+    body.innerHTML = `
+      <div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0a0a0a;color:#fff">
+        <div style="font-size:48px;margin-bottom:16px">🎮</div>
+        <div style="font-size:20px;font-weight:600;margin-bottom:8px;background:linear-gradient(135deg,#107c10,#00ff88);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">RQBBOX MODE</div>
+        <div style="font-size:13px;color:#666;margin-bottom:24px">Loading gaming dashboard...</div>
+        <div style="width:200px;height:2px;background:#222;border-radius:1px;overflow:hidden">
+          <div style="height:100%;width:0;background:#107c10;transition:width .3s" id="rqbbox-load-${w.id}"></div>
+        </div>
+      </div>
+    `;
+
+    // Animate loading bar
+    const loadBar = body.querySelector(`#rqbbox-load-${w.id}`);
+    let progress = 0;
+    const loadInterval = setInterval(() => {
+      progress += Math.random() * 20 + 10;
+      if (progress >= 100) {
+        progress = 100;
+        clearInterval(loadInterval);
+        // Load the actual RQBBOX MODE dashboard
+        body.innerHTML = '';
+        const iframe = document.createElement('iframe');
+        iframe.src = 'https://rtech-rqbbox-os.github.io/RQBBOX-MODE/dashboard.html';
+        iframe.style.cssText = 'width:100%;height:100%;border:none;background:#0a0a0a';
+        iframe.onload = () => {
+          try {
+            iframe.contentWindow.postMessage({ type: 'rqbbox-init' }, '*');
+          } catch(e) {}
+        };
+        body.appendChild(iframe);
+      }
+      loadBar.style.width = progress + '%';
+    }, 200);
+  },
+
+  // ========== RQBBOX LIFE ==========
+  openRqbboxLife() {
+    const w = this.createWindow({
+      title: 'RQBBOX LIFE',
+      icon: '🧬',
+      appId: 'rqbboxlife',
+      width: 1000,
+      height: 680
+    });
+    const body = w.el.querySelector('.window-body');
+    body.style.padding = '0';
+    body.style.background = '#080818';
+
+    // Loading state
+    body.innerHTML = `
+      <div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#080818;color:#fff">
+        <div style="font-size:48px;margin-bottom:16px">🧬</div>
+        <div style="font-size:20px;font-weight:600;margin-bottom:8px;background:linear-gradient(135deg,#00d4ff,#00ff88);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">RQBBOX LIFE</div>
+        <div style="font-size:13px;color:#666;margin-bottom:24px">Loading life simulation...</div>
+        <div style="width:200px;height:2px;background:#222;border-radius:1px;overflow:hidden">
+          <div style="height:100%;width:0;background:#00d4ff;transition:width .3s" id="life-load-${w.id}"></div>
+        </div>
+      </div>
+    `;
+
+    const loadBar = body.querySelector(`#life-load-${w.id}`);
+    let progress = 0;
+    const loadInterval = setInterval(() => {
+      progress += Math.random() * 20 + 10;
+      if (progress >= 100) {
+        progress = 100;
+        clearInterval(loadInterval);
+        body.innerHTML = '';
+        const iframe = document.createElement('iframe');
+        iframe.src = 'https://rtech-rqbbox-os.github.io/rqbbox-life/game/index.html';
+        iframe.style.cssText = 'width:100%;height:100%;border:none;background:#080818';
+        body.appendChild(iframe);
+      }
+      loadBar.style.width = progress + '%';
+    }, 200);
   },
 
   // ========== FILE EXPLORER ==========
