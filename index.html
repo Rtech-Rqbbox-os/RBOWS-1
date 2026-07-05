@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>RBOWS 1</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='7' height='7' x='1' y='1' fill='%230078d4'/><rect width='7' height='7' x='8' y='1' fill='%230078d4'/><rect width='7' height='7' x='1' y='8' fill='%230078d4'/><rect width='7' height='7' x='8' y='8' fill='%230078d4'/></svg>">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none}
+:root{
+  --accent:#0078d4;--accent-hover:#1a86d9;--accent-dark:#005a9e;
+  --bg:#202020;--surface:#2d2d2d;--surface-hover:#383838;--surface-active:#404040;
+  --text:#fff;--text-secondary:#999;--text-dim:#666;
+  --border:#404040;--border-light:#555;
+  --taskbar:#1e1e1e;--start-bg:#1e1e1e;
+  --titlebar:#2b2b2b;--titlebar-inactive:#383838;
+  --shadow:0 8px 32px rgba(0,0,0,.5);
+  --radius:0;
+}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:13px;color:var(--text);background:#000}
+
+/* BOOT SCREEN */
+#boot{position:fixed;inset:0;z-index:99999;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s}
+#boot.hidden{opacity:0;pointer-events:none}
+#boot-logo{margin-bottom:40px}
+#boot-logo svg{width:80px;height:80px}
+#boot-bar{width:200px;height:2px;background:#333;border-radius:1px;overflow:hidden}
+#boot-fill{height:100%;width:0;background:var(--accent);transition:width .3s}
+
+/* LOCK SCREEN */
+#lockscreen{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0078d4,#004e8c);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform .4s,opacity .4s}
+#lockscreen.hidden{transform:translateY(-100%);opacity:0;pointer-events:none}
+#lock-time{font-size:96px;font-weight:200;color:#fff;margin-bottom:8px}
+#lock-date{font-size:18px;color:rgba(255,255,255,.8);margin-bottom:60px}
+#lock-hint{font-size:14px;color:rgba(255,255,255,.5);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+
+/* DESKTOP */
+#desktop{position:fixed;inset:0;bottom:48px;background:linear-gradient(135deg,#0078d4 0%,#001a33 50%,#003366 100%);overflow:hidden}
+#desktop-wallpaper{position:absolute;inset:0;background:linear-gradient(135deg,#0078d4 0%,#001a33 50%,#003366 100%)}
+#desktop-icons{position:absolute;inset:12px;display:flex;flex-direction:column;flex-wrap:wrap;gap:4px;align-content:flex-start}
+.desktop-icon{width:76px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:2px;cursor:pointer;transition:background .1s}
+.desktop-icon:hover{background:rgba(255,255,255,.1)}
+.desktop-icon.selected{background:rgba(255,255,255,.15)}
+.desktop-icon img,.desktop-icon .icon-placeholder{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:28px}
+.desktop-icon span{font-size:11px;color:#fff;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.8);word-break:break-word;line-height:1.2}
+
+/* TASKBAR */
+#taskbar{position:fixed;bottom:0;left:0;right:0;height:48px;background:var(--taskbar);display:flex;align-items:center;z-index:10000;border-top:1px solid rgba(255,255,255,.05)}
+#start-btn{width:48px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .1s}
+#start-btn:hover{background:rgba(255,255,255,.1)}
+#start-btn svg{width:18px;height:18px}
+#search-box{height:32px;width:240px;margin-left:4px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:4px;display:flex;align-items:center;padding:0 12px;gap:8px;cursor:text}
+#search-box span{color:var(--text-secondary);font-size:12px}
+#search-box svg{width:14px;height:14px;opacity:.5}
+#taskbar-apps{flex:1;display:flex;align-items:center;padding:0 8px;gap:2px;height:100%}
+.taskbar-app{height:40px;padding:0 12px;display:flex;align-items:center;gap:8px;border-radius:2px;cursor:pointer;transition:background .1s;position:relative;min-width:40px}
+.taskbar-app:hover{background:rgba(255,255,255,.1)}
+.taskbar-app.active{background:rgba(255,255,255,.08)}
+.taskbar-app.active::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:24px;height:2px;background:var(--accent)}
+.taskbar-app .app-icon{font-size:16px}
+.taskbar-app .app-label{font-size:12px;color:var(--text);white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+#system-tray{display:flex;align-items:center;gap:4px;padding:0 8px;height:100%}
+.tray-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:2px;cursor:pointer;font-size:14px;transition:background .1s}
+.tray-icon:hover{background:rgba(255,255,255,.1)}
+#clock{padding:0 12px;height:100%;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;cursor:pointer;border-radius:2px;transition:background .1s}
+#clock:hover{background:rgba(255,255,255,.1)}
+#clock-time{font-size:12px;color:var(--text)}
+#clock-date{font-size:11px;color:var(--text-secondary)}
+#show-desktop{width:6px;height:100%;cursor:pointer;border-left:1px solid rgba(255,255,255,.1)}
+#show-desktop:hover{background:rgba(255,255,255,.1)}
+
+/* START MENU */
+#start-menu{position:fixed;bottom:48px;left:0;width:640px;height:calc(100vh - 48px);max-height:680px;background:var(--start-bg);border:1px solid var(--border);display:none;z-index:10001;box-shadow:var(--shadow);overflow:hidden}
+#start-menu.visible{display:flex}
+#start-left{width:48px;background:rgba(0,0,0,.2);display:flex;flex-direction:column;justify-content:flex-end;padding:8px 0}
+#start-left .start-nav{width:48px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .1s}
+#start-left .start-nav:hover{background:rgba(255,255,255,.1)}
+#start-left .start-nav svg{width:18px;height:18px;fill:var(--text)}
+.start-left-spacer{flex:1}
+#start-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#start-pinned{padding:16px 24px;flex:1;overflow-y:auto}
+#start-pinned h3{font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:12px;letter-spacing:.5px}
+#start-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.start-tile{height:64px;padding:12px;display:flex;flex-direction:column;justify-content:flex-end;border-radius:2px;cursor:pointer;transition:background .1s;position:relative;overflow:hidden}
+.start-tile:hover{filter:brightness(1.2)}
+.start-tile .tile-icon{font-size:22px;margin-bottom:4px}
+.start-tile .tile-label{font-size:11px;color:var(--text);font-weight:500}
+.start-tile.blue{background:var(--accent)}
+.start-tile.green{background:#107c10}
+.start-tile.orange{background:#d83b01}
+.start-tile.purple{background:#8764b8}
+.start-tile.teal{background:#008272}
+.start-tile.dark{background:#333}
+#start-bottom{border-top:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:12px}
+#start-bottom .user-btn{display:flex;align-items:center;gap:8px;padding:8px;border-radius:2px;cursor:pointer;transition:background .1s}
+#start-bottom .user-btn:hover{background:rgba(255,255,255,.1)}
+#start-bottom .user-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+#start-bottom .user-name{font-size:13px}
+#start-bottom .power-btn{margin-left:auto;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:2px;cursor:pointer;transition:background .1s}
+#start-bottom .power-btn:hover{background:rgba(255,255,255,.1)}
+
+/* WINDOWS */
+.rbows-window{position:absolute;min-width:320px;min-height:200px;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.rbows-window.maximized{top:0!important;left:0!important;width:100%!important;height:calc(100vh - 48px)!important;border:none}
+.rbows-window.minimized{display:none!important}
+.rbows-window.focused{z-index:auto;border-color:rgba(255,255,255,.1)}
+.window-titlebar{height:32px;background:var(--titlebar);display:flex;align-items:center;flex-shrink:0;cursor:default}
+.rbows-window.focused .window-titlebar{background:var(--titlebar)}
+.rbows-window:not(.focused) .window-titlebar{background:var(--titlebar-inactive)}
+.window-titlebar .app-icon{padding:0 12px;font-size:14px}
+.window-titlebar .title-text{flex:1;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rbows-window:not(.focused) .title-text{color:var(--text-secondary)}
+.window-controls{display:flex;height:100%}
+.window-controls button{width:46px;height:100%;border:none;background:transparent;color:var(--text);font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .1s}
+.window-controls button:hover{background:rgba(255,255,255,.1)}
+.window-controls .close-btn:hover{background:#e81123;color:#fff}
+.window-controls svg{width:10px;height:10px}
+.window-body{flex:1;overflow:auto;background:var(--bg)}
+.window-resize{position:absolute;z-index:2}
+.window-resize.n{top:-3px;left:8px;right:8px;height:6px;cursor:n-resize}
+.window-resize.s{bottom:-3px;left:8px;right:8px;height:6px;cursor:s-resize}
+.window-resize.e{right:-3px;top:8px;bottom:8px;width:6px;cursor:e-resize}
+.window-resize.w{left:-3px;top:8px;bottom:8px;width:6px;cursor:w-resize}
+.window-resize.ne{top:-3px;right:-3px;width:12px;height:12px;cursor:ne-resize}
+.window-resize.nw{top:-3px;left:-3px;width:12px;height:12px;cursor:nw-resize}
+.window-resize.se{bottom:-3px;right:-3px;width:12px;height:12px;cursor:se-resize}
+.window-resize.sw{bottom:-3px;left:-3px;width:12px;height:12px;cursor:sw-resize}
+
+/* SNAP PREVIEW */
+#snap-preview{position:fixed;z-index:9998;background:rgba(0,120,212,.3);border:2px solid var(--accent);display:none;pointer-events:none;transition:all .15s}
+
+/* RIGHT CLICK MENU */
+#context-menu{position:fixed;z-index:99999;background:var(--surface);border:1px solid var(--border);min-width:200px;display:none;box-shadow:var(--shadow);padding:4px 0}
+#context-menu.visible{display:block}
+.ctx-item{padding:6px 24px 6px 16px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background .1s}
+.ctx-item:hover{background:rgba(255,255,255,.08)}
+.ctx-separator{height:1px;background:var(--border);margin:4px 0}
+.ctx-item .ctx-icon{width:16px;text-align:center;font-size:13px}
+.ctx-item .ctx-shortcut{margin-left:auto;color:var(--text-dim);font-size:11px}
+
+/* ACTION CENTER */
+#action-center{position:fixed;top:0;right:0;width:360px;height:calc(100vh - 48px);background:var(--surface);border-left:1px solid var(--border);z-index:10002;transform:translateX(100%);transition:transform .2s;display:flex;flex-direction:column}
+#action-center.visible{transform:translateX(0)}
+#ac-header{padding:16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+#ac-header h3{font-size:14px;font-weight:600}
+#ac-notifications{flex:1;overflow-y:auto;padding:8px}
+.ac-notification{padding:12px;background:rgba(255,255,255,.04);border-radius:4px;margin-bottom:4px;cursor:pointer;transition:background .1s}
+.ac-notification:hover{background:rgba(255,255,255,.08)}
+.ac-notification .notif-title{font-size:12px;font-weight:600;color:var(--text)}
+.ac-notification .notif-body{font-size:11px;color:var(--text-secondary);margin-top:4px}
+.ac-notification .notif-time{font-size:10px;color:var(--text-dim);margin-top:4px}
+#ac-quick{padding:12px 16px;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.ac-quick-btn{height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:2px;cursor:pointer;transition:background .1s;font-size:10px;color:var(--text-secondary);gap:4px}
+.ac-quick-btn:hover{background:rgba(255,255,255,.08)}
+.ac-quick-btn.on{background:var(--accent);color:#fff}
+.ac-quick-btn .quick-icon{font-size:16px}
+#ac-slider{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px}
+#ac-slider input[type=range]{flex:1;accent-color:var(--accent)}
+#ac-slider span{font-size:12px;color:var(--text-secondary)}
+
+/* APP: FILE EXPLORER */
+.explorer{display:flex;height:100%;flex-direction:column}
+.explorer-toolbar{height:36px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 8px;gap:4px}
+.explorer-toolbar button{width:28px;height:28px;border:none;background:transparent;color:var(--text);border-radius:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:background .1s}
+.explorer-toolbar button:hover{background:rgba(255,255,255,.1)}
+.explorer-toolbar button:disabled{opacity:.3;cursor:default}
+.explorer-path{flex:1;height:26px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:0 8px;font-size:12px;font-family:inherit}
+.explorer-body{display:flex;flex:1;overflow:hidden}
+.explorer-sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:4px 0}
+.explorer-sidebar .nav-item{padding:6px 16px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s}
+.explorer-sidebar .nav-item:hover{background:rgba(255,255,255,.06)}
+.explorer-sidebar .nav-item.active{background:rgba(0,120,212,.15);color:var(--accent)}
+.explorer-sidebar .nav-section{padding:8px 16px 4px;font-size:11px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.explorer-content{flex:1;overflow-y:auto;padding:4px}
+.explorer-item{display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:2px;cursor:pointer;transition:background .1s}
+.explorer-item:hover{background:rgba(255,255,255,.06)}
+.explorer-item.selected{background:rgba(0,120,212,.2)}
+.explorer-item .item-icon{font-size:16px;width:20px;text-align:center}
+.explorer-item .item-name{font-size:12px;flex:1}
+.explorer-item .item-size{font-size:11px;color:var(--text-dim);width:80px;text-align:right}
+.explorer-item .item-date{font-size:11px;color:var(--text-dim);width:120px}
+.explorer-status{height:24px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 12px;font-size:11px;color:var(--text-secondary)}
+
+/* APP: NOTEPAD */
+.notepad{display:flex;flex-direction:column;height:100%}
+.notepad-menu{height:28px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 4px;gap:0}
+.notepad-menu button{padding:4px 10px;border:none;background:transparent;color:var(--text);font-size:12px;cursor:pointer;border-radius:2px;transition:background .1s}
+.notepad-menu button:hover{background:rgba(255,255,255,.08)}
+.notepad textarea{flex:1;background:var(--bg);color:var(--text);border:none;padding:8px 12px;font-family:'Consolas','Courier New',monospace;font-size:13px;resize:none;outline:none;line-height:1.5}
+.notepad-status{height:22px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:flex-end;padding:0 12px;font-size:11px;color:var(--text-secondary)}
+
+/* APP: CALCULATOR */
+.calc{display:flex;flex-direction:column;height:100%;background:#202020}
+.calc-display{padding:16px 20px;text-align:right;min-height:80px;display:flex;flex-direction:column;justify-content:flex-end}
+.calc-display .calc-expr{font-size:13px;color:var(--text-secondary);min-height:18px}
+.calc-display .calc-result{font-size:40px;font-weight:200;color:var(--text)}
+.calc-buttons{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;padding:2px;flex:1}
+.calc-btn{border:none;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .1s;border-radius:0}
+.calc-btn.num{background:#3b3b3b;color:var(--text)}
+.calc-btn.num:hover{background:#444}
+.calc-btn.op{background:#323232;color:var(--text)}
+.calc-btn.op:hover{background:#3a3a3a}
+.calc-btn.eq{background:var(--accent);color:#fff}
+.calc-btn.eq:hover{background:var(--accent-hover)}
+.calc-btn.fn{background:#323232;color:var(--text)}
+.calc-btn.fn:hover{background:#3a3a3a}
+
+/* APP: SETTINGS */
+.settings{display:flex;height:100%}
+.settings-nav{width:220px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:8px 0}
+.settings-nav .nav-item{padding:8px 20px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background .1s;border-radius:2px;margin:0 8px}
+.settings-nav .nav-item:hover{background:rgba(255,255,255,.06)}
+.settings-nav .nav-item.active{background:rgba(0,120,212,.15);color:var(--accent)}
+.settings-content{flex:1;overflow-y:auto;padding:32px}
+.settings-content h2{font-size:24px;font-weight:300;margin-bottom:24px}
+.settings-content h3{font-size:14px;font-weight:600;margin:20px 0 8px;color:var(--text)}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface);border:1px solid var(--border);margin-bottom:2px}
+.settings-row:first-of-type{border-radius:4px 4px 0 0}
+.settings-row:last-of-type{border-radius:0 0 4px 4px;border-bottom:none}
+.settings-row .label{font-size:13px}
+.settings-row .sublabel{font-size:11px;color:var(--text-secondary);margin-top:2px}
+.toggle{width:40px;height:20px;background:#555;border-radius:10px;cursor:pointer;position:relative;transition:background .2s}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:left .2s}
+.toggle.on::after{left:22px}
+select.setting-select{background:var(--bg);color:var(--text);border:1px solid var(--border);padding:6px 12px;border-radius:2px;font-size:12px;font-family:inherit}
+
+/* APP: TERMINAL */
+.terminal{display:flex;flex-direction:column;height:100%;background:#0c0c0c}
+.terminal-output{flex:1;padding:8px 12px;font-family:'Cascadia Mono','Consolas','Courier New',monospace;font-size:13px;color:#cccccc;overflow-y:auto;white-space:pre-wrap;word-break:break-all;line-height:1.4}
+.terminal-output .cmd-line{color:#fff}
+.terminal-output .cmd-output{color:#cccccc}
+.terminal-output .cmd-error{color:#f44336}
+.terminal-output .cmd-success{color:#4caf50}
+.terminal-input-line{display:flex;padding:0 12px 8px;font-family:'Cascadia Mono','Consolas',monospace;font-size:13px}
+.terminal-input-line .prompt{color:#6a9955;white-space:nowrap}
+.terminal-input-line input{flex:1;background:transparent;border:none;color:#cccccc;font-family:inherit;font-size:13px;outline:none}
+
+/* APP: BROWSER */
+.browser{display:flex;flex-direction:column;height:100%}
+.browser-toolbar{height:36px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 8px;gap:6px}
+.browser-toolbar button{width:28px;height:28px;border:none;background:transparent;color:var(--text);border-radius:2px;cursor:pointer;font-size:14px;transition:background .1s}
+.browser-toolbar button:hover{background:rgba(255,255,255,.1)}
+.browser-url{flex:1;height:26px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:0 10px;font-size:12px;font-family:inherit}
+.browser-url:focus{border-color:var(--accent);outline:none}
+.browser-frame{flex:1;border:none;background:#fff}
+
+/* APP: ABOUT */
+.about-app{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:linear-gradient(135deg,#0078d4,#001a33);padding:40px;text-align:center}
+.about-app .about-logo{width:80px;height:80px;margin-bottom:24px}
+.about-app h1{font-size:32px;font-weight:200;color:#fff;margin-bottom:4px}
+.about-app .version{font-size:14px;color:rgba(255,255,255,.6);margin-bottom:24px}
+.about-app p{font-size:13px;color:rgba(255,255,255,.4);max-width:400px;line-height:1.6}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.25)}
+
+/* NOTIFICATION TOAST */
+#toast-container{position:fixed;top:16px;right:16px;z-index:99999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--surface);border:1px solid var(--border);padding:12px 16px;border-radius:4px;box-shadow:var(--shadow);min-width:300px;max-width:380px;display:flex;gap:12px;animation:slideIn .2s}
+.toast .toast-icon{font-size:18px;flex-shrink:0}
+.toast .toast-body{flex:1}
+.toast .toast-title{font-size:12px;font-weight:600}
+.toast .toast-msg{font-size:11px;color:var(--text-secondary);margin-top:2px}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* CONTEXT MENU */
+.app-context-menu{position:fixed;z-index:99999;background:var(--surface);border:1px solid var(--border);min-width:180px;box-shadow:var(--shadow);padding:4px 0;display:none}
+.app-context-menu.visible{display:block}
+</style>
+</head>
+<body>
+
+<!-- BOOT SCREEN -->
+<div id="boot">
+  <div id="boot-logo">
+    <svg viewBox="0 0 80 80" fill="none"><rect x="4" y="4" width="32" height="32" rx="2" fill="#0078d4"/><rect x="44" y="4" width="32" height="32" rx="2" fill="#0078d4"/><rect x="4" y="44" width="32" height="32" rx="2" fill="#0078d4"/><rect x="44" y="44" width="32" height="32" rx="2" fill="#0078d4"/></svg>
+  </div>
+  <div id="boot-bar"><div id="boot-fill"></div></div>
+</div>
+
+<!-- LOCK SCREEN -->
+<div id="lockscreen" class="hidden">
+  <div id="lock-time"></div>
+  <div id="lock-date"></div>
+  <div id="lock-hint">Click anywhere to sign in</div>
+</div>
+
+<!-- DESKTOP -->
+<div id="desktop">
+  <div id="desktop-wallpaper"></div>
+  <div id="desktop-icons"></div>
+</div>
+
+<!-- WINDOWS CONTAINER -->
+<div id="windows-container"></div>
+
+<!-- SNAP PREVIEW -->
+<div id="snap-preview"></div>
+
+<!-- CONTEXT MENU -->
+<div id="context-menu"></div>
+
+<!-- TASKBAR -->
+<div id="taskbar">
+  <div id="start-btn" title="Start">
+    <svg viewBox="0 0 18 18" fill="#fff"><rect x="0" y="0" width="8" height="8" rx="1"/><rect x="10" y="0" width="8" height="8" rx="1"/><rect x="0" y="10" width="8" height="8" rx="1"/><rect x="10" y="10" width="8" height="8" rx="1"/></svg>
+  </div>
+  <div id="search-box">
+    <svg viewBox="0 0 16 16" fill="#999"><circle cx="6.5" cy="6.5" r="5" stroke="#999" stroke-width="1.5" fill="none"/><line x1="10" y1="10" x2="15" y2="15" stroke="#999" stroke-width="1.5"/></svg>
+    <span>Type here to search</span>
+  </div>
+  <div id="taskbar-apps"></div>
+  <div id="system-tray">
+    <div class="tray-icon" title="Network">📶</div>
+    <div class="tray-icon" title="Volume">🔊</div>
+    <div class="tray-icon" id="ac-trigger" title="Notifications">🔔</div>
+  </div>
+  <div id="clock">
+    <div id="clock-time"></div>
+    <div id="clock-date"></div>
+  </div>
+  <div id="show-desktop" title="Show desktop"></div>
+</div>
+
+<!-- START MENU -->
+<div id="start-menu">
+  <div id="start-left">
+    <div class="start-nav" title="Menu">
+      <svg viewBox="0 0 18 18" fill="#fff"><rect x="2" y="3" width="14" height="1.5" rx=".5"/><rect x="2" y="8" width="14" height="1.5" rx=".5"/><rect x="2" y="13" width="14" height="1.5" rx=".5"/></svg>
+    </div>
+    <div class="start-left-spacer"></div>
+    <div class="start-nav" id="start-settings-btn" title="Settings">⚙️</div>
+    <div class="start-nav" id="start-power-btn" title="Power">⏻</div>
+  </div>
+  <div id="start-main">
+    <div id="start-pinned">
+      <h3>Pinned</h3>
+      <div id="start-tiles"></div>
+    </div>
+    <div id="start-bottom">
+      <div class="user-btn">
+        <div class="user-avatar">R</div>
+        <span class="user-name">User</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACTION CENTER -->
+<div id="action-center">
+  <div id="ac-header">
+    <h3>Notifications</h3>
+    <span style="font-size:12px;color:var(--accent);cursor:pointer" id="ac-clear">Clear all</span>
+  </div>
+  <div id="ac-notifications"></div>
+  <div id="ac-quick">
+    <div class="ac-quick-btn on" data-toggle="wifi"><span class="quick-icon">📶</span>Wi-Fi</div>
+    <div class="ac-quick-btn on" data-toggle="bt"><span class="quick-icon">🔵</span>Bluetooth</div>
+    <div class="ac-quick-btn" data-toggle="airplane"><span class="quick-icon">✈️</span>Airplane</div>
+    <div class="ac-quick-btn" data-toggle="night"><span class="quick-icon">🌙</span>Night</div>
+    <div class="ac-quick-btn" data-toggle="location"><span class="quick-icon">📍</span>Location</div>
+    <div class="ac-quick-btn on" data-toggle="focus"><span class="quick-icon">🎯</span>Focus</div>
+    <div class="ac-quick-btn" data-toggle="hotspot"><span class="quick-icon">📱</span>Hotspot</div>
+    <div class="ac-quick-btn" data-toggle="vpn"><span class="quick-icon">🔒</span>VPN</div>
+  </div>
+  <div id="ac-slider">
+    <span>☀️</span>
+    <input type="range" min="0" max="100" value="80">
+    <span id="ac-brightness">80%</span>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+// ========== CORE OS ==========
+const OS = {
+  windows: [],
+  windowId: 0,
+  focusedWindow: null,
+  zIndex: 100,
+  startOpen: false,
+  acOpen: false,
+
+  init() {
+    this.boot();
+    this.initTaskbar();
+    this.initClock();
+    this.initStartMenu();
+    this.initDesktop();
+    this.initContextMenu();
+    this.initActionCenter();
+    this.initKeyboard();
+    this.updateClock();
+    setInterval(() => this.updateClock(), 1000);
+  },
+
+  // ========== BOOT ==========
+  boot() {
+    const fill = document.getElementById('boot-fill');
+    let w = 0;
+    const iv = setInterval(() => {
+      w += Math.random() * 15 + 5;
+      if (w >= 100) {
+        w = 100; clearInterval(iv);
+        setTimeout(() => {
+          document.getElementById('boot').classList.add('hidden');
+          document.getElementById('lockscreen').classList.remove('hidden');
+          document.getElementById('lockscreen').onclick = () => {
+            document.getElementById('lockscreen').classList.add('hidden');
+          };
+        }, 300);
+      }
+      fill.style.width = w + '%';
+    }, 150);
+  },
+
+  // ========== CLOCK ==========
+  initClock() {
+    document.getElementById('clock').onclick = () => {
+      this.toggleActionCenter();
+    };
+  },
+  updateClock() {
+    const now = new Date();
+    document.getElementById('clock-time').textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    document.getElementById('clock-date').textContent = now.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+    document.getElementById('lock-time').textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: false });
+    document.getElementById('lock-date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  },
+
+  // ========== TASKBAR ==========
+  initTaskbar() {
+    document.getElementById('start-btn').onclick = (e) => {
+      e.stopPropagation();
+      this.toggleStartMenu();
+    };
+    document.getElementById('show-desktop').onclick = () => this.toggleShowDesktop();
+    document.getElementById('search-box').onclick = () => {
+      this.toggleStartMenu();
+    };
+  },
+
+  updateTaskbar() {
+    const container = document.getElementById('taskbar-apps');
+    container.innerHTML = '';
+    this.windows.forEach(w => {
+      if (w.minimized && !w.closed) {
+        const el = document.createElement('div');
+        el.className = 'taskbar-app' + (w.focused ? ' active' : '');
+        el.innerHTML = `<span class="app-icon">${w.icon}</span><span class="app-label">${w.title}</span>`;
+        el.onclick = () => this.focusWindow(w.id);
+        container.appendChild(el);
+      } else if (!w.closed) {
+        const el = document.createElement('div');
+        el.className = 'taskbar-app' + (w.focused ? ' active' : '');
+        el.innerHTML = `<span class="app-icon">${w.icon}</span><span class="app-label">${w.title}</span>`;
+        el.onclick = () => {
+          if (w.focused) this.minimizeWindow(w.id);
+          else this.focusWindow(w.id);
+        };
+        container.appendChild(el);
+      }
+    });
+  },
+
+  // ========== START MENU ==========
+  initStartMenu() {
+    const tiles = document.getElementById('start-tiles');
+    const apps = [
+      { id: 'explorer', icon: '📁', label: 'File Explorer', color: 'blue' },
+      { id: 'notepad', icon: '📝', label: 'Notepad', color: 'dark' },
+      { id: 'calculator', icon: '🔢', label: 'Calculator', color: 'dark' },
+      { id: 'terminal', icon: '💻', label: 'Terminal', color: 'dark' },
+      { id: 'browser', icon: '🌐', label: 'Edge', color: 'blue' },
+      { id: 'settings', icon: '⚙️', label: 'Settings', color: 'dark' },
+      { id: 'photos', icon: '🖼️', label: 'Photos', color: 'dark' },
+      { id: 'music', icon: '🎵', label: 'Music', color: 'purple' },
+      { id: 'weather', icon: '🌤️', label: 'Weather', color: 'teal' },
+      { id: 'maps', icon: '🗺️', label: 'Maps', color: 'green' },
+      { id: 'store', icon: '🛒', label: 'Store', color: 'green' },
+      { id: 'about', icon: 'ℹ️', label: 'About RBOWS', color: 'blue' },
+    ];
+    apps.forEach(a => {
+      const tile = document.createElement('div');
+      tile.className = 'start-tile ' + a.color;
+      tile.innerHTML = `<span class="tile-icon">${a.icon}</span><span class="tile-label">${a.label}</span>`;
+      tile.onclick = () => { this.openApp(a.id); this.toggleStartMenu(); };
+      tiles.appendChild(tile);
+    });
+
+    document.getElementById('start-settings-btn').onclick = (e) => {
+      e.stopPropagation();
+      this.openApp('settings');
+      this.toggleStartMenu();
+    };
+    document.getElementById('start-power-btn').onclick = (e) => {
+      e.stopPropagation();
+      this.showNotification('RBOWS', 'Sleep mode is not available in web version');
+    };
+
+    document.addEventListener('click', (e) => {
+      if (this.startOpen && !e.target.closest('#start-menu') && !e.target.closest('#start-btn')) {
+        this.toggleStartMenu();
+      }
+    });
+  },
+
+  toggleStartMenu() {
+    this.startOpen = !this.startOpen;
+    document.getElementById('start-menu').classList.toggle('visible', this.startOpen);
+    if (this.startOpen) this.closeActionCenter();
+  },
+
+  // ========== DESKTOP ==========
+  initDesktop() {
+    const icons = document.getElementById('desktop-icons');
+    const desktopItems = [
+      { id: 'explorer', icon: '📁', label: 'This PC' },
+      { id: 'recycle', icon: '🗑️', label: 'Recycle Bin' },
+      { id: 'terminal', icon: '💻', label: 'Terminal' },
+      { id: 'browser', icon: '🌐', label: 'Edge' },
+      { id: 'notepad', icon: '📝', label: 'Notepad' },
+      { id: 'about', icon: 'ℹ️', label: 'About RBOWS' },
+    ];
+    desktopItems.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'desktop-icon';
+      el.innerHTML = `<div class="icon-placeholder">${item.icon}</div><span>${item.label}</span>`;
+      el.ondblclick = () => this.openApp(item.id);
+      el.onclick = (e) => {
+        document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+        e.stopPropagation();
+      };
+      icons.appendChild(el);
+    });
+
+    document.getElementById('desktop').oncontextmenu = (e) => {
+      e.preventDefault();
+      this.showContextMenu(e.clientX, e.clientY, [
+        { icon: '🔄', label: 'Refresh', action: () => this.showNotification('Desktop', 'Refreshed') },
+        { type: 'separator' },
+        { icon: '📁', label: 'New folder', action: () => this.showNotification('Desktop', 'Folder created') },
+        { icon: '📝', label: 'New text document', action: () => this.openApp('notepad') },
+        { type: 'separator' },
+        { icon: '🖥️', label: 'Display settings', action: () => this.openApp('settings') },
+        { icon: '🎨', label: 'Personalize', action: () => this.openApp('settings') },
+        { type: 'separator' },
+        { icon: 'ℹ️', label: 'About RBOWS', action: () => this.openApp('about') },
+      ]);
+    };
+
+    document.getElementById('desktop').onclick = (e) => {
+      if (e.target === document.getElementById('desktop') || e.target === document.getElementById('desktop-wallpaper')) {
+        document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
+      }
+    };
+  },
+
+  // ========== CONTEXT MENU ==========
+  initContextMenu() {
+    document.addEventListener('click', () => this.hideContextMenu());
+    document.addEventListener('contextmenu', (e) => {
+      if (!e.target.closest('#desktop') && !e.target.closest('.explorer-content')) {
+        this.hideContextMenu();
+      }
+    });
+  },
+
+  showContextMenu(x, y, items) {
+    const menu = document.getElementById('context-menu');
+    menu.innerHTML = '';
+    items.forEach(item => {
+      if (item.type === 'separator') {
+        menu.innerHTML += '<div class="ctx-separator"></div>';
+      } else {
+        const el = document.createElement('div');
+        el.className = 'ctx-item';
+        el.innerHTML = `<span class="ctx-icon">${item.icon || ''}</span>${item.label}${item.shortcut ? `<span class="ctx-shortcut">${item.shortcut}</span>` : ''}`;
+        el.onclick = (e) => { e.stopPropagation(); item.action(); this.hideContextMenu(); };
+        menu.appendChild(el);
+      }
+    });
+    menu.style.left = Math.min(x, window.innerWidth - 220) + 'px';
+    menu.style.top = Math.min(y, window.innerHeight - menu.children.length * 30 - 20) + 'px';
+    menu.classList.add('visible');
+  },
+
+  hideContextMenu() {
+    document.getElementById('context-menu').classList.remove('visible');
+  },
+
+  // ========== ACTION CENTER ==========
+  initActionCenter() {
+    document.getElementById('ac-trigger').onclick = (e) => {
+      e.stopPropagation();
+      this.toggleActionCenter();
+    };
+    document.getElementById('ac-clear').onclick = () => {
+      document.getElementById('ac-notifications').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim)">No new notifications</div>';
+    };
+    document.querySelectorAll('.ac-quick-btn').forEach(btn => {
+      btn.onclick = () => btn.classList.toggle('on');
+    });
+    const slider = document.querySelector('#ac-slider input');
+    slider.oninput = () => {
+      document.getElementById('ac-brightness').textContent = slider.value + '%';
+    };
+    document.addEventListener('click', (e) => {
+      if (this.acOpen && !e.target.closest('#action-center') && !e.target.closest('#ac-trigger') && !e.target.closest('#clock')) {
+        this.closeActionCenter();
+      }
+    });
+  },
+
+  toggleActionCenter() {
+    this.acOpen = !this.acOpen;
+    document.getElementById('action-center').classList.toggle('visible', this.acOpen);
+    if (this.acOpen) this.toggleStartMenu();
+  },
+  closeActionCenter() {
+    this.acOpen = false;
+    document.getElementById('action-center').classList.remove('visible');
+  },
+
+  addNotification(title, body) {
+    const container = document.getElementById('ac-notifications');
+    const notif = document.createElement('div');
+    notif.className = 'ac-notification';
+    notif.innerHTML = `<div class="notif-title">${title}</div><div class="notif-body">${body}</div><div class="notif-time">Just now</div>`;
+    container.prepend(notif);
+  },
+
+  // ========== TOAST ==========
+  showNotification(title, msg, icon = 'ℹ️') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<div class="toast-icon">${icon}</div><div class="toast-body"><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div>`;
+    container.appendChild(toast);
+    this.addNotification(title, msg);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity .3s'; setTimeout(() => toast.remove(), 300); }, 3000);
+  },
+
+  // ========== KEYBOARD ==========
+  initKeyboard() {
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Meta' || (e.key === 'Control' && e.code === 'ControlLeft')) {
+        e.preventDefault();
+        this.toggleStartMenu();
+      }
+    });
+  },
+
+  // ========== WINDOW MANAGER ==========
+  createWindow(opts) {
+    const id = ++this.windowId;
+    const w = {
+      id, title: opts.title || 'Window', icon: opts.icon || '📄',
+      width: opts.width || 800, height: opts.height || 550,
+      x: opts.x ?? 80 + (this.windows.length % 8) * 30,
+      y: opts.y ?? 60 + (this.windows.length % 8) * 30,
+      minimized: false, maximized: false, closed: false, focused: false,
+      appId: opts.appId, el: null, restoreBounds: null
+    };
+
+    const el = document.createElement('div');
+    el.className = 'rbows-window focused';
+    el.id = 'window-' + id;
+    el.style.cssText = `left:${w.x}px;top:${w.y}px;width:${w.width}px;height:${w.height}px;z-index:${++this.zIndex}`;
+
+    el.innerHTML = `
+      <div class="window-titlebar" data-wid="${id}">
+        <span class="app-icon">${w.icon}</span>
+        <span class="title-text">${w.title}</span>
+        <div class="window-controls">
+          <button class="min-btn" title="Minimize"><svg viewBox="0 0 10 10"><line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" stroke-width="1"/></svg></button>
+          <button class="max-btn" title="Maximize"><svg viewBox="0 0 10 10"><rect x="1" y="1" width="8" height="8" stroke="currentColor" stroke-width="1" fill="none"/></svg></button>
+          <button class="close-btn" title="Close"><svg viewBox="0 0 10 10"><line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" stroke-width="1"/><line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" stroke-width="1"/></svg></button>
+        </div>
+      </div>
+      <div class="window-body" id="window-body-${id}"></div>
+      <div class="window-resize n" data-dir="n"></div>
+      <div class="window-resize s" data-dir="s"></div>
+      <div class="window-resize e" data-dir="e"></div>
+      <div class="window-resize w" data-dir="w"></div>
+      <div class="window-resize ne" data-dir="ne"></div>
+      <div class="window-resize nw" data-dir="nw"></div>
+      <div class="window-resize se" data-dir="se"></div>
+      <div class="window-resize sw" data-dir="sw"></div>
+    `;
+
+    document.getElementById('windows-container').appendChild(el);
+    w.el = el;
+    this.windows.push(w);
+
+    // Window controls
+    el.querySelector('.min-btn').onclick = () => this.minimizeWindow(id);
+    el.querySelector('.max-btn').onclick = () => this.maximizeWindow(id);
+    el.querySelector('.close-btn').onclick = () => this.closeWindow(id);
+
+    // Drag
+    this.initDrag(w);
+    // Resize
+    this.initResize(w);
+
+    // Focus on click
+    el.addEventListener('mousedown', () => this.focusWindow(id));
+
+    this.focusWindow(id);
+    this.updateTaskbar();
+    return w;
+  },
+
+  focusWindow(id) {
+    const w = this.windows.find(w => w.id === id);
+    if (!w || w.closed) return;
+    this.windows.forEach(w2 => { w2.focused = false; w2.el.classList.remove('focused'); });
+    w.focused = true;
+    w.el.classList.add('focused');
+    w.el.style.zIndex = ++this.zIndex;
+    this.focusedWindow = w;
+    this.updateTaskbar();
+  },
+
+  minimizeWindow(id) {
+    const w = this.windows.find(w => w.id === id);
+    if (!w) return;
+    w.minimized = true;
+    w.el.classList.add('minimized');
+    w.focused = false;
+    this.updateTaskbar();
+  },
+
+  maximizeWindow(id) {
+    const w = this.windows.find(w => w.id === id);
+    if (!w) return;
+    if (w.maximized) {
+      w.maximized = false;
+      w.el.classList.remove('maximized');
+      if (w.restoreBounds) {
+        w.el.style.left = w.restoreBounds.x + 'px';
+        w.el.style.top = w.restoreBounds.y + 'px';
+        w.el.style.width = w.restoreBounds.w + 'px';
+        w.el.style.height = w.restoreBounds.h + 'px';
+      }
+    } else {
+      w.restoreBounds = {
+        x: w.el.offsetLeft, y: w.el.offsetTop,
+        w: w.el.offsetWidth, h: w.el.offsetHeight
+      };
+      w.maximized = true;
+      w.el.classList.add('maximized');
+    }
+  },
+
+  closeWindow(id) {
+    const w = this.windows.find(w => w.id === id);
+    if (!w) return;
+    w.closed = true;
+    w.el.remove();
+    this.windows = this.windows.filter(w2 => w2.id !== id);
+    this.updateTaskbar();
+  },
+
+  toggleShowDesktop() {
+    const anyVisible = this.windows.some(w => !w.minimized && !w.closed);
+    this.windows.forEach(w => {
+      if (!w.closed) {
+        if (anyVisible) {
+          w.minimized = true;
+          w.el.classList.add('minimized');
+        } else {
+          w.minimized = false;
+          w.el.classList.remove('minimized');
+        }
+      }
+    });
+    this.updateTaskbar();
+  },
+
+  // ========== DRAG ==========
+  initDrag(w) {
+    const titlebar = w.el.querySelector('.window-titlebar');
+    let dragging = false, sx, sy, ox, oy;
+
+    titlebar.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.window-controls')) return;
+      if (w.maximized) return;
+      dragging = true;
+      sx = e.clientX; sy = e.clientY;
+      ox = w.el.offsetLeft; oy = w.el.offsetTop;
+      document.body.style.cursor = 'move';
+      e.preventDefault();
+    });
+
+    titlebar.addEventListener('dblclick', (e) => {
+      if (e.target.closest('.window-controls')) return;
+      this.maximizeWindow(w.id);
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      let nx = ox + dx, ny = oy + dy;
+      ny = Math.max(0, ny);
+      w.el.style.left = nx + 'px';
+      w.el.style.top = ny + 'px';
+
+      // Snap preview
+      const preview = document.getElementById('snap-preview');
+      if (e.clientX <= 2) {
+        preview.style.cssText = `display:block;left:0;top:0;width:50%;height:calc(100vh - 48px)`;
+      } else if (e.clientX >= window.innerWidth - 2) {
+        preview.style.cssText = `display:block;left:50%;top:0;width:50%;height:calc(100vh - 48px)`;
+      } else if (e.clientY <= 2) {
+        preview.style.cssText = `display:block;left:0;top:0;width:100%;height:calc(100vh - 48px)`;
+      } else {
+        preview.style.display = 'none';
+      }
+    });
+
+    document.addEventListener('mouseup', (e) => {
+      if (!dragging) return;
+      dragging = false;
+      document.body.style.cursor = '';
+      const preview = document.getElementById('snap-preview');
+      preview.style.display = 'none';
+
+      // Snap
+      if (e.clientX <= 2) {
+        w.restoreBounds = { x: w.el.offsetLeft, y: w.el.offsetTop, w: w.el.offsetWidth, h: w.el.offsetHeight };
+        w.el.style.cssText = `left:0;top:0;width:50%;height:calc(100vh - 48px);z-index:${w.el.style.zIndex}`;
+      } else if (e.clientX >= window.innerWidth - 2) {
+        w.restoreBounds = { x: w.el.offsetLeft, y: w.el.offsetTop, w: w.el.offsetWidth, h: w.el.offsetHeight };
+        w.el.style.cssText = `left:50%;top:0;width:50%;height:calc(100vh - 48px);z-index:${w.el.style.zIndex}`;
+      } else if (e.clientY <= 2) {
+        this.maximizeWindow(w.id);
+      }
+    });
+  },
+
+  // ========== RESIZE ==========
+  initResize(w) {
+    w.el.querySelectorAll('.window-resize').forEach(handle => {
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const dir = handle.dataset.dir;
+        const sx = e.clientX, sy = e.clientY;
+        const ox = w.el.offsetLeft, oy = w.el.offsetTop;
+        const ow = w.el.offsetWidth, oh = w.el.offsetHeight;
+
+        const onMove = (e) => {
+          const dx = e.clientX - sx, dy = e.clientY - sy;
+          let nx = ox, ny = oy, nw = ow, nh = oh;
+          if (dir.includes('e')) nw = Math.max(320, ow + dx);
+          if (dir.includes('w')) { nw = Math.max(320, ow - dx); nx = ox + ow - nw; }
+          if (dir.includes('s')) nh = Math.max(200, oh + dy);
+          if (dir.includes('n')) { nh = Math.max(200, oh - dy); ny = oy + oh - nh; }
+          w.el.style.left = nx + 'px'; w.el.style.top = ny + 'px';
+          w.el.style.width = nw + 'px'; w.el.style.height = nh + 'px';
+        };
+        const onUp = () => {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    });
+  },
+
+  // ========== APPS ==========
+  openApp(appId) {
+    const apps = {
+      explorer: () => this.openExplorer(),
+      notepad: () => this.openNotepad(),
+      calculator: () => this.openCalculator(),
+      terminal: () => this.openTerminal(),
+      browser: () => this.openBrowser(),
+      settings: () => this.openSettings(),
+      about: () => this.openAbout(),
+      photos: () => this.openGeneric('Photos', '🖼️', '<div style="padding:40px;text-align:center;color:var(--text-dim)"><div style="font-size:48px;margin-bottom:16px">🖼️</div><div>No photos yet</div></div>'),
+      music: () => this.openGeneric('Music', '🎵', '<div style="padding:40px;text-align:center;color:var(--text-dim)"><div style="font-size:48px;margin-bottom:16px">🎵</div><div>No music yet</div></div>'),
+      weather: () => this.openWeather(),
+      maps: () => this.openGeneric('Maps', '🗺️', '<div style="padding:40px;text-align:center;color:var(--text-dim)"><div style="font-size:48px;margin-bottom:16px">🗺️</div><div>Maps not available</div></div>'),
+      store: () => this.openStore(),
+    };
+    if (apps[appId]) apps[appId]();
+  },
+
+  openGeneric(title, icon, body) {
+    const w = this.createWindow({ title, icon, appId: title.toLowerCase() });
+    w.el.querySelector('.window-body').innerHTML = body;
+  },
+
+  // ========== FILE EXPLORER ==========
+  openExplorer(startPath = 'C:\\') {
+    const w = this.createWindow({ title: 'File Explorer', icon: '📁', appId: 'explorer', width: 900, height: 600 });
+    const body = w.el.querySelector('.window-body');
+    const fs = VFS;
+
+    let currentPath = startPath;
+    let history = [startPath];
+    let historyIndex = 0;
+
+    function render() {
+      const items = fs.readDir(currentPath) || [];
+      body.innerHTML = `
+        <div class="explorer">
+          <div class="explorer-toolbar">
+            <button class="back-btn" ${historyIndex === 0 ? 'disabled' : ''}>◀</button>
+            <button class="forward-btn" ${historyIndex === history.length - 1 ? 'disabled' : ''}>▶</button>
+            <button class="up-btn">⬆</button>
+            <input class="explorer-path" value="${currentPath}" readonly>
+            <button class="refresh-btn">🔄</button>
+          </div>
+          <div class="explorer-body">
+            <div class="explorer-sidebar">
+              <div class="nav-section">Quick access</div>
+              <div class="nav-item" data-path="C:\\">📁 This PC</div>
+              <div class="nav-item" data-path="C:\\Users\\User\\Desktop">🖥️ Desktop</div>
+              <div class="nav-item" data-path="C:\\Users\\User\\Documents">📄 Documents</div>
+              <div class="nav-item" data-path="C:\\Users\\User\\Downloads">⬇️ Downloads</div>
+              <div class="nav-item" data-path="C:\\Users\\User\\Pictures">🖼️ Pictures</div>
+              <div class="nav-item" data-path="C:\\Users\\User\\Music">🎵 Music</div>
+              <div class="nav-item" data-path="C:\\Users\\User\\Videos">🎬 Videos</div>
+              <div class="nav-section">Drives</div>
+              <div class="nav-item" data-path="C:\\">💾 Local Disk (C:)</div>
+            </div>
+            <div class="explorer-content" id="explorer-content-${w.id}"></div>
+          </div>
+          <div class="explorer-status">${items.length} items</div>
+        </div>
+      `;
+
+      // Render items
+      const content = body.querySelector('.explorer-content');
+      content.innerHTML = '';
+      items.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'explorer-item';
+        const isDir = item.type === 'dir';
+        el.innerHTML = `
+          <span class="item-icon">${isDir ? '📁' : '📄'}</span>
+          <span class="item-name">${item.name}</span>
+          <span class="item-size">${isDir ? '' : (item.size || '')}</span>
+          <span class="item-date">${item.date || ''}</span>
+        `;
+        if (isDir) {
+          el.ondblclick = () => {
+            const newPath = currentPath.endsWith('\\') ? currentPath + item.name : currentPath + '\\' + item.name;
+            navigate(newPath);
+          };
+        } else {
+          el.ondblclick = () => {
+            if (item.name.endsWith('.txt') || item.name.endsWith('.md')) {
+              OS.openNotepad(item.content || '', item.name);
+            }
+          };
+        }
+        el.onclick = (e) => {
+          content.querySelectorAll('.explorer-item').forEach(i => i.classList.remove('selected'));
+          el.classList.add('selected');
+        };
+        el.oncontextmenu = (e) => {
+          e.preventDefault(); e.stopPropagation();
+          OS.showContextMenu(e.clientX, e.clientY, [
+            { icon: '📂', label: 'Open', action: () => el.ondblclick() },
+            { icon: '✂️', label: 'Cut', action: () => {} },
+            { icon: '📋', label: 'Copy', action: () => {} },
+            { type: 'separator' },
+            { icon: '🗑️', label: 'Delete', action: () => {
+              fs.delete(currentPath + '\\' + item.name);
+              render();
+              OS.showNotification('File Explorer', `Deleted ${item.name}`);
+            }},
+            { icon: '✏️', label: 'Rename', action: () => {} },
+          ]);
+        };
+        content.appendChild(el);
+      });
+
+      // Sidebar nav
+      body.querySelectorAll('.explorer-sidebar .nav-item').forEach(nav => {
+        nav.onclick = () => navigate(nav.dataset.path);
+        nav.classList.toggle('active', nav.dataset.path === currentPath);
+      });
+
+      // Toolbar buttons
+      body.querySelector('.back-btn').onclick = () => {
+        if (historyIndex > 0) { historyIndex--; currentPath = history[historyIndex]; render(); }
+      };
+      body.querySelector('.forward-btn').onclick = () => {
+        if (historyIndex < history.length - 1) { historyIndex++; currentPath = history[historyIndex]; render(); }
+      };
+      body.querySelector('.up-btn').onclick = () => {
+        const parts = currentPath.split('\\').filter(Boolean);
+        if (parts.length > 1) {
+          parts.pop();
+          navigate(parts.join('\\') + '\\');
+        }
+      };
+    }
+
+    function navigate(path) {
+      currentPath = path;
+      history = history.slice(0, historyIndex + 1);
+      history.push(path);
+      historyIndex = history.length - 1;
+      render();
+    }
+
+    render();
+  },
+
+  // ========== NOTEPAD ==========
+  openNotepad(content = '', filename = 'Untitled') {
+    const w = this.createWindow({ title: filename + ' - Notepad', icon: '📝', appId: 'notepad', width: 700, height: 500 });
+    const body = w.el.querySelector('.window-body');
+    body.innerHTML = `
+      <div class="notepad">
+        <div class="notepad-menu">
+          <button>File</button><button>Edit</button><button>Format</button><button>View</button><button>Help</button>
+        </div>
+        <textarea spellcheck="false" placeholder="Start typing...">${content}</textarea>
+        <div class="notepad-status">Ln 1, Col 1</div>
+      </div>
+    `;
+    const textarea = body.querySelector('textarea');
+    const status = body.querySelector('.notepad-status');
+    textarea.oninput = () => updateStatus();
+    textarea.onkeyup = () => updateStatus();
+    textarea.style.userSelect = 'text';
+    function updateStatus() {
+      const val = textarea.value.substring(0, textarea.selectionStart);
+      const lines = val.split('\n');
+      status.textContent = `Ln ${lines.length}, Col ${lines[lines.length - 1].length + 1}`;
+    }
+    textarea.focus();
+    body.querySelector('.notepad-menu button').onclick = () => {
+      OS.showContextMenu(w.el.offsetLeft + 10, w.el.offsetTop + 60, [
+        { icon: '📄', label: 'New', action: () => { textarea.value = ''; w.el.querySelector('.title-text').textContent = 'Untitled - Notepad'; } },
+        { icon: '📂', label: 'Open...', action: () => OS.showNotification('Notepad', 'Open dialog not available') },
+        { icon: '💾', label: 'Save', action: () => OS.showNotification('Notepad', 'Saved to virtual filesystem') },
+        { icon: '💾', label: 'Save As...', action: () => OS.showNotification('Notepad', 'Save As not available') },
+        { type: 'separator' },
+        { icon: '❌', label: 'Exit', action: () => OS.closeWindow(w.id) },
+      ]);
+    };
+  },
+
+  // ========== CALCULATOR ==========
+  openCalculator() {
+    const w = this.createWindow({ title: 'Calculator', icon: '🔢', appId: 'calculator', width: 320, height: 480 });
+    const body = w.el.querySelector('.window-body');
+    let current = '0', expression = '', operator = null, newNumber = true;
+
+    body.innerHTML = `
+      <div class="calc">
+        <div class="calc-display">
+          <div class="calc-expr"></div>
+          <div class="calc-result">0</div>
+        </div>
+        <div class="calc-buttons">
+          <button class="calc-btn fn" data-action="pct">%</button>
+          <button class="calc-btn fn" data-action="ce">CE</button>
+          <button class="calc-btn fn" data-action="clear">C</button>
+          <button class="calc-btn fn" data-action="back">⌫</button>
+          <button class="calc-btn op" data-action="inv">1/x</button>
+          <button class="calc-btn op" data-action="sq">x²</button>
+          <button class="calc-btn op" data-action="sqrt">√x</button>
+          <button class="calc-btn op" data-action="div">÷</button>
+          <button class="calc-btn num" data-val="7">7</button>
+          <button class="calc-btn num" data-val="8">8</button>
+          <button class="calc-btn num" data-val="9">9</button>
+          <button class="calc-btn op" data-action="mul">×</button>
+          <button class="calc-btn num" data-val="4">4</button>
+          <button class="calc-btn num" data-val="5">5</button>
+          <button class="calc-btn num" data-val="6">6</button>
+          <button class="calc-btn op" data-action="sub">−</button>
+          <button class="calc-btn num" data-val="1">1</button>
+          <button class="calc-btn num" data-val="2">2</button>
+          <button class="calc-btn num" data-val="3">3</button>
+          <button class="calc-btn op" data-action="add">+</button>
+          <button class="calc-btn num" data-action="negate">±</button>
+          <button class="calc-btn num" data-val="0">0</button>
+          <button class="calc-btn num" data-action="dot">.</button>
+          <button class="calc-btn eq" data-action="eq">=</button>
+        </div>
+      </div>
+    `;
+
+    function update() {
+      body.querySelector('.calc-result').textContent = current;
+      body.querySelector('.calc-expr').textContent = expression;
+    }
+
+    body.querySelectorAll('.calc-btn').forEach(btn => {
+      btn.onclick = () => {
+        const val = btn.dataset.val;
+        const action = btn.dataset.action;
+
+        if (val !== undefined) {
+          if (newNumber) { current = val; newNumber = false; }
+          else { current = current === '0' ? val : current + val; }
+        } else if (action === 'clear') {
+          current = '0'; expression = ''; operator = null; newNumber = true;
+        } else if (action === 'ce') {
+          current = '0';
+        } else if (action === 'back') {
+          current = current.length > 1 ? current.slice(0, -1) : '0';
+        } else if (action === 'dot') {
+          if (!current.includes('.')) current += '.';
+        } else if (action === 'negate') {
+          current = current.startsWith('-') ? current.slice(1) : '-' + current;
+        } else if (action === 'sq') {
+          current = String(Math.pow(parseFloat(current), 2));
+        } else if (action === 'sqrt') {
+          current = String(Math.sqrt(parseFloat(current)));
+        } else if (action === 'inv') {
+          current = String(1 / parseFloat(current));
+        } else if (action === 'pct') {
+          current = String(parseFloat(current) / 100);
+        } else if (['add','sub','mul','div'].includes(action)) {
+          if (operator && !newNumber) {
+            current = String(calculate(parseFloat(expression), parseFloat(current), operator));
+          }
+          expression = current;
+          operator = action;
+          newNumber = true;
+        } else if (action === 'eq') {
+          if (operator) {
+            current = String(calculate(parseFloat(expression), parseFloat(current), operator));
+            expression = '';
+            operator = null;
+            newNumber = true;
+          }
+        }
+        update();
+      };
+    });
+
+    function calculate(a, b, op) {
+      switch (op) {
+        case 'add': return a + b;
+        case 'sub': return a - b;
+        case 'mul': return a * b;
+        case 'div': return b !== 0 ? a / b : 'Error';
+        default: return b;
+      }
+    }
+  },
+
+  // ========== TERMINAL ==========
+  openTerminal() {
+    const w = this.createWindow({ title: 'Terminal', icon: '💻', appId: 'terminal', width: 750, height: 480 });
+    const body = w.el.querySelector('.window-body');
+    let history = [];
+    let historyIndex = -1;
+    const cwd = { value: 'C:\\Users\\User' };
+
+    body.innerHTML = `
+      <div class="terminal">
+        <div class="terminal-output" id="term-out-${w.id}"><span class="cmd-success">RBOWS 1 [Version 10.0.26220]</span>\n<span class="cmd-output">(c) RhysTech. All rights reserved.</span>\n\n</div>
+        <div class="terminal-input-line">
+          <span class="prompt">${cwd.value}&gt;</span>
+          <input id="term-in-${w.id}" autofocus>
+        </div>
+      </div>
+    `;
+
+    const input = body.querySelector('input');
+    const output = body.querySelector('.terminal-output');
+    input.style.userSelect = 'text';
+
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        const cmd = input.value.trim();
+        output.innerHTML += `<span class="cmd-line">${cwd.value}&gt; ${cmd}</span>\n`;
+        if (cmd) {
+          history.push(cmd);
+          historyIndex = history.length;
+          const result = Terminal.exec(cmd, cwd);
+          if (result !== null) output.innerHTML += result + '\n';
+        }
+        input.value = '';
+        output.scrollTop = output.scrollHeight;
+        // Update prompt
+        body.querySelector('.prompt').textContent = cwd.value + '>';
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (historyIndex > 0) { historyIndex--; input.value = history[historyIndex]; }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (historyIndex < history.length - 1) { historyIndex++; input.value = history[historyIndex]; }
+        else { historyIndex = history.length; input.value = ''; }
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        const partial = input.value.split(' ').pop();
+        const cmds = ['dir','cd','cls','echo','type','mkdir','rmdir','del','copy','move','ren','time','date','ver','help','clear','exit','cat','ls','pwd','whoami','hostname','ipconfig','tasklist','systeminfo','title'];
+        const match = cmds.find(c => c.startsWith(partial.toLowerCase()));
+        if (match) {
+          const parts = input.value.split(' ');
+          parts[parts.length - 1] = match;
+          input.value = parts.join(' ');
+        }
+      }
+    };
+
+    setTimeout(() => input.focus(), 100);
+    w.el.addEventListener('click', () => input.focus());
+  },
+
+  // ========== BROWSER ==========
+  openBrowser(url = 'https://www.bing.com') {
+    const w = this.createWindow({ title: 'Edge', icon: '🌐', appId: 'browser', width: 1000, height: 650 });
+    const body = w.el.querySelector('.window-body');
+    body.innerHTML = `
+      <div class="browser">
+        <div class="browser-toolbar">
+          <button class="browser-back">◀</button>
+          <button class="browser-forward">▶</button>
+          <button class="browser-refresh">🔄</button>
+          <input class="browser-url" value="${url}">
+          <button class="browser-go">→</button>
+        </div>
+        <iframe class="browser-frame" src="${url}" sandbox="allow-same-origin allow-scripts allow-forms allow-popups" loading="lazy"></iframe>
+      </div>
+    `;
+    const urlInput = body.querySelector('.browser-url');
+    const frame = body.querySelector('.browser-frame');
+    const go = () => {
+      let u = urlInput.value;
+      if (!u.startsWith('http')) u = 'https://' + u;
+      frame.src = u;
+      w.el.querySelector('.title-text').textContent = u.replace('https://', '').split('/')[0] + ' - Edge';
+    };
+    body.querySelector('.browser-go').onclick = go;
+    urlInput.onkeydown = (e) => { if (e.key === 'Enter') go(); };
+    body.querySelector('.browser-refresh').onclick = () => { frame.src = frame.src; };
+  },
+
+  // ========== SETTINGS ==========
+  openSettings() {
+    const w = this.createWindow({ title: 'Settings', icon: '⚙️', appId: 'settings', width: 900, height: 600 });
+    const body = w.el.querySelector('.window-body');
+    const sections = [
+      { id: 'system', icon: '🖥️', label: 'System', content: `
+        <h2>System</h2>
+        <h3>Display</h3>
+        <div class="settings-row"><div><div class="label">Night light</div><div class="sublabel">Reduce blue light to help you sleep</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+        <div class="settings-row"><div><div class="label">HDR</div><div class="sublabel">Stream HDR video</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+        <h3>Sound</h3>
+        <div class="settings-row"><div><div class="label">Output device</div></div><select class="setting-select"><option>Speakers</option><option>Headphones</option></select></div>
+        <div class="settings-row"><div><div class="label">Master volume</div></div><input type="range" min="0" max="100" value="80" style="width:200px;accent-color:var(--accent)"></div>
+        <h3>Power & battery</h3>
+        <div class="settings-row"><div><div class="label">Power mode</div><div class="sublabel">Optimize for best performance</div></div><select class="setting-select"><option>Best performance</option><option>Balanced</option><option>Best power efficiency</option></select></div>
+      `},
+      { id: 'devices', icon: '🖨️', label: 'Devices', content: `
+        <h2>Devices</h2>
+        <h3>Bluetooth & devices</h3>
+        <div class="settings-row"><div><div class="label">Bluetooth</div><div class="sublabel">Discoverable as "RBOWS-PC"</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <h3>Mouse</h3>
+        <div class="settings-row"><div><div class="label">Pointer speed</div></div><input type="range" min="1" max="10" value="5" style="width:200px;accent-color:var(--accent)"></div>
+      `},
+      { id: 'personalization', icon: '🎨', label: 'Personalization', content: `
+        <h2>Personalization</h2>
+        <h3>Background</h3>
+        <div class="settings-row"><div><div class="label">Background</div></div><select class="setting-select"><option>Solid color</option><option>Picture</option><option>Slideshow</option></select></div>
+        <h3>Colors</h3>
+        <div class="settings-row"><div><div class="label">Transparency effects</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="settings-row"><div><div class="label">Accent color</div></div><div style="display:flex;gap:6px"><div style="width:24px;height:24px;background:#0078d4;border-radius:3px;cursor:pointer;border:2px solid #fff"></div><div style="width:24px;height:24px;background:#e81123;border-radius:3px;cursor:pointer"></div><div style="width:24px;height:24px;background:#107c10;border-radius:3px;cursor:pointer"></div><div style="width:24px;height:24px;background:#ff8c00;border-radius:3px;cursor:pointer"></div></div></div>
+        <h3>Themes</h3>
+        <div class="settings-row"><div><div class="label">Current theme</div><div class="sublabel">Dark</div></div></div>
+      `},
+      { id: 'apps', icon: '📦', label: 'Apps', content: `
+        <h2>Apps</h2>
+        <h3>Installed apps</h3>
+        <div class="settings-row"><div><div class="label">File Explorer</div><div class="sublabel">v10.0</div></div></div>
+        <div class="settings-row"><div><div class="label">Notepad</div><div class="sublabel">v10.0</div></div></div>
+        <div class="settings-row"><div><div class="label">Calculator</div><div class="sublabel">v10.0</div></div></div>
+        <div class="settings-row"><div><div class="label">Terminal</div><div class="sublabel">v10.0</div></div></div>
+        <div class="settings-row"><div><div class="label">Microsoft Edge</div><div class="sublabel">v10.0</div></div></div>
+      `},
+      { id: 'accounts', icon: '👤', label: 'Accounts', content: `
+        <h2>Accounts</h2>
+        <h3>Your info</h3>
+        <div style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:16px">
+          <div style="width:64px;height:64px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:600">R</div>
+          <div><div style="font-size:16px;font-weight:600">User</div><div style="font-size:12px;color:var(--text-secondary)">Local account</div></div>
+        </div>
+        <h3>Sign-in options</h3>
+        <div class="settings-row"><div><div class="label">Password</div><div class="sublabel">Create a password for your account</div></div></div>
+      `},
+      { id: 'privacy', icon: '🔒', label: 'Privacy & security', content: `
+        <h2>Privacy & security</h2>
+        <h3>Windows Security</h3>
+        <div class="settings-row"><div><div class="label">Device security</div><div class="sublabel">No actions needed</div></div></div>
+        <h3>Privacy</h3>
+        <div class="settings-row"><div><div class="label">Location</div><div class="sublabel">Let apps access your location</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="settings-row"><div><div class="label">Camera</div><div class="sublabel">Let apps access your camera</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+        <div class="settings-row"><div><div class="label">Microphone</div><div class="sublabel">Let apps access your microphone</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      `},
+      { id: 'update', icon: '🔄', label: 'Windows Update', content: `
+        <h2>Windows Update</h2>
+        <div style="padding:24px;background:var(--surface);border:1px solid var(--border);border-radius:4px;text-align:center;margin-bottom:16px">
+          <div style="font-size:36px;margin-bottom:8px">✅</div>
+          <div style="font-size:16px;font-weight:600;color:var(--accent)">You're up to date</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Last checked: ${new Date().toLocaleString()}</div>
+          <button style="margin-top:16px;padding:8px 24px;background:var(--accent);color:#fff;border:none;border-radius:2px;cursor:pointer;font-size:13px">Check for updates</button>
+        </div>
+        <h3>Update history</h3>
+        <div class="settings-row"><div><div class="label">Feature Update to RBOWS 1</div><div class="sublabel">Successfully installed</div></div></div>
+      `},
+    ];
+
+    let activeSection = sections[0];
+
+    function renderSettings() {
+      body.innerHTML = `
+        <div class="settings">
+          <div class="settings-nav">
+            ${sections.map(s => `
+              <div class="nav-item ${s.id === activeSection.id ? 'active' : ''}" data-section="${s.id}">
+                <span>${s.icon}</span> ${s.label}
+              </div>
+            `).join('')}
+          </div>
+          <div class="settings-content">${activeSection.content}</div>
+        </div>
+      `;
+      body.querySelectorAll('.settings-nav .nav-item').forEach(nav => {
+        nav.onclick = () => {
+          activeSection = sections.find(s => s.id === nav.dataset.section);
+          renderSettings();
+        };
+      });
+      // Re-bind toggles
+      body.querySelectorAll('.toggle').forEach(t => {
+        t.onclick = () => t.classList.toggle('on');
+      });
+    }
+
+    renderSettings();
+  },
+
+  // ========== WEATHER ==========
+  openWeather() {
+    const w = this.createWindow({ title: 'Weather', icon: '🌤️', appId: 'weather', width: 600, height: 450 });
+    const body = w.el.querySelector('.window-body');
+    body.innerHTML = `
+      <div style="height:100%;background:linear-gradient(135deg,#1a237e,#0d47a1);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;padding:40px;text-align:center">
+        <div style="font-size:72px;margin-bottom:8px">☀️</div>
+        <div style="font-size:48px;font-weight:200">24°C</div>
+        <div style="font-size:16px;color:rgba(255,255,255,.7);margin-top:4px">Partly Cloudy</div>
+        <div style="font-size:14px;color:rgba(255,255,255,.5);margin-top:8px">RQBBOX City</div>
+        <div style="display:flex;gap:32px;margin-top:32px">
+          <div><div style="font-size:24px">💧</div><div style="font-size:12px;color:rgba(255,255,255,.6)">45%</div></div>
+          <div><div style="font-size:24px">💨</div><div style="font-size:12px;color:rgba(255,255,255,.6)">12 km/h</div></div>
+          <div><div style="font-size:24px">👁</div><div style="font-size:12px;color:rgba(255,255,255,.6)">10 km</div></div>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:32px">
+          ${['Mon\n☀️\n26°','Tue\n🌤️\n24°','Wed\n🌧️\n18°','Thu\n⛈️\n16°','Fri\n☀️\n22°','Sat\n🌤️\n25°','Sun\n☀️\n27°'].map(d => {
+            const [day,icon,temp] = d.split('\n');
+            return `<div style="text-align:center"><div style="font-size:11px;color:rgba(255,255,255,.5)">${day}</div><div style="font-size:20px;margin:4px 0">${icon}</div><div style="font-size:12px">${temp}</div></div>`;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  },
+
+  // ========== STORE ==========
+  openStore() {
+    const w = this.createWindow({ title: 'Store', icon: '🛒', appId: 'store', width: 900, height: 600 });
+    const body = w.el.querySelector('.window-body');
+    const apps = [
+      { name: 'RQBBOX MODE', icon: '🎮', desc: 'Xbox-style gaming dashboard', rating: '⭐ 4.8' },
+      { name: 'RQBBOX LIFE', icon: '🧬', desc: 'Life simulation game', rating: '⭐ 4.9' },
+      { name: 'Discord', icon: '💬', desc: 'Chat with friends', rating: '⭐ 4.7' },
+      { name: 'Spotify', icon: '🎵', desc: 'Music streaming', rating: '⭐ 4.6' },
+      { name: 'VS Code', icon: '📝', desc: 'Code editor', rating: '⭐ 4.9' },
+      { name: 'OBS Studio', icon: '🎥', desc: 'Streaming & recording', rating: '⭐ 4.8' },
+      { name: 'Steam', icon: '🎮', desc: 'Game launcher', rating: '⭐ 4.5' },
+      { name: 'VLC', icon: '🎬', desc: 'Media player', rating: '⭐ 4.7' },
+    ];
+    body.innerHTML = `
+      <div style="height:100%;background:var(--bg);padding:24px;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+          <h2 style="font-size:24px;font-weight:300">Store</h2>
+          <div style="display:flex;gap:8px">
+            <div style="padding:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer">Home</div>
+            <div style="padding:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer">Apps</div>
+            <div style="padding:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer">Gaming</div>
+          </div>
+        </div>
+        <div style="background:linear-gradient(135deg,var(--accent),#004e8c);border-radius:8px;padding:32px;margin-bottom:24px;color:#fff">
+          <div style="font-size:11px;letter-spacing:2px;margin-bottom:8px">FEATURED</div>
+          <div style="font-size:28px;font-weight:600;margin-bottom:8px">🎮 RQBBOX MODE</div>
+          <div style="font-size:14px;opacity:.7;margin-bottom:16px">The ultimate Xbox-style gaming dashboard. Full-screen kiosk mode, Quick Resume, and 7 built-in games.</div>
+          <button style="padding:8px 24px;background:#fff;color:var(--accent);border:none;border-radius:4px;cursor:pointer;font-weight:600">Get</button>
+        </div>
+        <h3 style="font-size:14px;margin-bottom:16px">Popular apps</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+          ${apps.map(a => `
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+              <div style="font-size:32px;margin-bottom:8px">${a.icon}</div>
+              <div style="font-size:13px;font-weight:600">${a.name}</div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${a.desc}</div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:8px">${a.rating}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  },
+
+  // ========== ABOUT ==========
+  openAbout() {
+    const w = this.createWindow({ title: 'About RBOWS', icon: 'ℹ️', appId: 'about', width: 500, height: 400 });
+    const body = w.el.querySelector('.window-body');
+    body.innerHTML = `
+      <div class="about-app">
+        <svg class="about-logo" viewBox="0 0 80 80" fill="none"><rect x="4" y="4" width="32" height="32" rx="2" fill="#0078d4"/><rect x="44" y="4" width="32" height="32" rx="2" fill="#0078d4"/><rect x="4" y="44" width="32" height="32" rx="2" fill="#0078d4"/><rect x="44" y="44" width="32" height="32" rx="2" fill="#0078d4"/></svg>
+        <h1>RBOWS 1</h1>
+        <div class="version">Version 10.0.26220 · Build 2026.07.05</div>
+        <p>RBOWS 1 is a Windows 10-compatible desktop environment built for the RQBBOX OS ecosystem. Everything works — file system, window manager, built-in apps, settings, and more.</p>
+        <div style="margin-top:24px;font-size:12px;color:rgba(255,255,255,.3)">© 2026 RhysTech · Part of RQBBOX OS</div>
+      </div>
+    `;
+  },
+};
+
+// ========== VIRTUAL FILE SYSTEM ==========
+const VFS = {
+  root: {
+    'C:': {
+      type: 'dir', children: {
+        'Users': {
+          type: 'dir', children: {
+            'User': {
+              type: 'dir', children: {
+                'Desktop': { type: 'dir', children: {
+                  'New Text Document.txt': { type: 'file', content: 'Hello from RBOWS 1!', size: '24 B', date: '7/5/2026' },
+                  'Shortcuts.lnk': { type: 'file', size: '1 KB', date: '7/5/2026' },
+                }},
+                'Documents': { type: 'dir', children: {
+                  'report.txt': { type: 'file', content: 'Q2 2026 Report\nRevenue: $1.2M\nGrowth: 15%', size: '48 B', date: '7/5/2026' },
+                  'notes.md': { type: 'file', content: '# Notes\n- Build RBOWS 1\n- Deploy to GitHub\n- Test all apps', size: '64 B', date: '7/5/2026' },
+                  'Projects': { type: 'dir', children: {
+                    'rbows-website': { type: 'dir', children: {} },
+                    'rqbbox-mode': { type: 'dir', children: {} },
+                  }},
+                }},
+                'Downloads': { type: 'dir', children: {
+                  'setup.exe': { type: 'file', size: '88.4 MB', date: '7/5/2026' },
+                  'wallpaper.png': { type: 'file', size: '2.1 MB', date: '7/5/2026' },
+                  'document.pdf': { type: 'file', size: '340 KB', date: '7/5/2026' },
+                }},
+                'Pictures': { type: 'dir', children: {
+                  'Screenshots': { type: 'dir', children: {} },
+                  'Wallpapers': { type: 'dir', children: {} },
+                }},
+                'Music': { type: 'dir', children: {} },
+                'Videos': { type: 'dir', children: {} },
+              }
+            }
+          }
+        },
+        'Program Files': { type: 'dir', children: {
+          'RBOWS': { type: 'dir', children: {
+            'RBOWS.exe': { type: 'file', size: '128 KB', date: '7/5/2026' },
+            'uninstall.exe': { type: 'file', size: '64 KB', date: '7/5/2026' },
+          }},
+          'Common Files': { type: 'dir', children: {} },
+        }},
+        'Windows': { type: 'dir', children: {
+          'System32': { type: 'dir', children: {
+            'cmd.exe': { type: 'file', size: '302 KB', date: '7/5/2026' },
+            'notepad.exe': { type: 'file', size: '201 KB', date: '7/5/2026' },
+            'calc.exe': { type: 'file', size: '156 KB', date: '7/5/2026' },
+          }},
+          'Fonts': { type: 'dir', children: {} },
+          'Temp': { type: 'dir', children: {} },
+        }},
+      }
+    }
+  },
+
+  getNode(path) {
+    const parts = path.replace(/\\/g, '/').split('/').filter(Boolean);
+    let node = this.root;
+    for (const p of parts) {
+      if (node && node.children) node = node.children[p];
+      else if (node && node[p]) node = node[p];
+      else return null;
+    }
+    return node;
+  },
+
+  readDir(path) {
+    const node = this.getNode(path);
+    if (!node || !node.children) return [];
+    return Object.entries(node.children).map(([name, data]) => ({
+      name, type: data.type, size: data.size || '', date: data.date || '', content: data.content || ''
+    }));
+  },
+
+  readFile(path) {
+    const node = this.getNode(path);
+    return node ? (node.content || '') : '';
+  },
+
+  writeFile(path, content) {
+    const parts = path.replace(/\\/g, '/').split('/').filter(Boolean);
+    const fileName = parts.pop();
+    let parent = this.root;
+    for (const p of parts) {
+      if (!parent.children) parent.children = {};
+      if (!parent.children[p]) parent.children[p] = { type: 'dir', children: {} };
+      parent = parent.children[p];
+    }
+    if (!parent.children) parent.children = {};
+    parent.children[fileName] = { type: 'file', content, size: content.length + ' B', date: new Date().toLocaleDateString() };
+  },
+
+  delete(path) {
+    const parts = path.replace(/\\/g, '/').split('/').filter(Boolean);
+    const name = parts.pop();
+    let parent = this.root;
+    for (const p of parts) {
+      if (parent.children) parent = parent.children[p];
+      else if (parent[p]) parent = parent[p];
+      else return false;
+    }
+    if (parent.children && parent.children[name]) {
+      delete parent.children[name];
+      return true;
+    }
+    return false;
+  },
+
+  mkdir(path) {
+    const parts = path.replace(/\\/g, '/').split('/').filter(Boolean);
+    let node = this.root;
+    for (const p of parts) {
+      if (!node.children) node.children = {};
+      if (!node.children[p]) node.children[p] = { type: 'dir', children: {} };
+      node = node.children[p];
+    }
+  }
+};
+
+// ========== TERMINAL ==========
+const Terminal = {
+  exec(cmd, cwd) {
+    const parts = cmd.split(/\s+/);
+    const command = parts[0].toLowerCase();
+    const args = parts.slice(1).join(' ');
+
+    switch (command) {
+      case 'help':
+        return `<span class="cmd-output">Available commands:
+  dir       List directory contents
+  cd        Change directory
+  cls       Clear screen
+  echo      Display text
+  type      Display file contents
+  mkdir     Create directory
+  rmdir     Remove directory
+  del       Delete file
+  copy      Copy file
+  move      Move file
+  ren       Rename file
+  time      Display time
+  date      Display date
+  ver       Display version
+  whoami    Display current user
+  hostname  Display computer name
+  ipconfig  Display network config
+  tasklist  Display running processes
+  systeminfo Display system information
+  title     Set window title
+  cat       Display file contents (alias)
+  ls        List directory (alias)
+  pwd       Print working directory
+  clear     Clear screen (alias)
+  exit      Close terminal</span>`;
+
+      case 'dir': case 'ls': {
+        const items = VFS.readDir(cwd.value);
+        if (!items.length) return '<span class="cmd-output">  Directory is empty</span>';
+        let out = `<span class="cmd-output"> Directory of ${cwd.value}\n</span>`;
+        items.forEach(i => {
+          out += `<span class="cmd-output">  ${i.type === 'dir' ? '&lt;DIR&gt;' : '     '}  ${i.date || '7/5/2026'}  ${i.size.padStart(8)}  ${i.name}</span>\n`;
+        });
+        out += `<span class="cmd-output">  ${items.length} item(s)</span>`;
+        return out;
+      }
+
+      case 'cd': {
+        if (!args || args === '~') { cwd.value = 'C:\\Users\\User'; return null; }
+        if (args === '..') {
+          const parts = cwd.value.split('\\').filter(Boolean);
+          if (parts.length > 1) { parts.pop(); cwd.value = parts.join('\\') + (parts.length === 1 ? '\\' : ''); }
+          return null;
+        }
+        const target = args.startsWith('C:') ? args : cwd.value + (cwd.value.endsWith('\\') ? '' : '\\') + args;
+        const node = VFS.getNode(target);
+        if (node && node.type === 'dir') { cwd.value = target; return null; }
+        return `<span class="cmd-error">The system cannot find the path specified: ${args}</span>`;
+      }
+
+      case 'cls': case 'clear':
+        document.querySelector(`#term-out-${document.querySelector('.rbows-window.focused')?.id?.replace('window-','')}`).innerHTML = '';
+        return null;
+
+      case 'echo':
+        return `<span class="cmd-output">${args || ''}</span>`;
+
+      case 'type': case 'cat': {
+        if (!args) return '<span class="cmd-error">The syntax of the command is incorrect.</span>';
+        const filePath = args.startsWith('C:') ? args : cwd.value + (cwd.value.endsWith('\\') ? '' : '\\') + args;
+        const content = VFS.readFile(filePath);
+        if (content !== null && content !== '') return `<span class="cmd-output">${content}</span>`;
+        return `<span class="cmd-error">The system cannot find the file specified: ${args}</span>`;
+      }
+
+      case 'mkdir':
+        if (!args) return '<span class="cmd-error">The syntax of the command is incorrect.</span>';
+        VFS.mkdir(cwd.value + '\\' + args);
+        return null;
+
+      case 'del': case 'rm': {
+        if (!args) return '<span class="cmd-error">The syntax of the command is incorrect.</span>';
+        const filePath = args.startsWith('C:') ? args : cwd.value + (cwd.value.endsWith('\\') ? '' : '\\') + args;
+        if (VFS.delete(filePath)) return null;
+        return `<span class="cmd-error">Could not find ${args}</span>`;
+      }
+
+      case 'time':
+        return `<span class="cmd-output">The current time is: ${new Date().toLocaleTimeString()}</span>`;
+
+      case 'date':
+        return `<span class="cmd-output">The current date is: ${new Date().toLocaleDateString()}</span>`;
+
+      case 'ver':
+        return `<span class="cmd-output">\nRBOWS [Version 10.0.26220]\n(c) RhysTech. All rights reserved.\n</span>`;
+
+      case 'whoami':
+        return `<span class="cmd-output">RBOWS-PC\\User</span>`;
+
+      case 'hostname':
+        return `<span class="cmd-output">RBOWS-PC</span>`;
+
+      case 'ipconfig':
+        return `<span class="cmd-output">Ethernet adapter Ethernet:
+
+   Connection-specific DNS Suffix  . :
+   IPv4 Address. . . . . . . . . . . : 192.168.1.100
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Default Gateway . . . . . . . . . : 192.168.1.1</span>`;
+
+      case 'tasklist':
+        return `<span class="cmd-output">Image Name                     PID Session Name        Mem Usage
+========================= ======== ================ ============
+RBOWS.exe                      1234 Console              12,344 K
+explorer.exe                   5678 Console              45,678 K
+dwm.exe                        9012 Console              23,456 K</span>`;
+
+      case 'systeminfo':
+        return `<span class="cmd-output">Host Name:                 RBOWS-PC
+OS Name:                   RBOWS 1
+OS Version:                10.0.26220 Build 26220
+System Manufacturer:       RhysTech
+System Type:               x64-based PC
+Processor(s):              1 Processor(s) Installed
+Total Physical Memory:     16,384 MB
+Available Physical Memory: 8,192 MB</span>`;
+
+      case 'title':
+        return null;
+
+      case 'exit':
+        const winId = document.querySelector('.rbows-window.focused')?.id?.replace('window-','');
+        if (winId) OS.closeWindow(parseInt(winId));
+        return null;
+
+      default:
+        return `<span class="cmd-error">'${command}' is not recognized as an internal or external command,\noperable program or batch file.</span>`;
+    }
+  }
+};
+
+// ========== INIT ==========
+window.onload = () => OS.init();
+</script>
+</body>
+</html>
