@@ -23,7 +23,7 @@ function createWindow() {
     titleBarStyle: 'hidden'
   });
 
-  mainWindow.loadFile('index.html');
+  mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
   mainWindow.on('closed', () => {
     mainWindow = null;
