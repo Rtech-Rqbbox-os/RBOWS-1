@@ -471,30 +471,7 @@ const OS = {
 
   // ========== START MENU ==========
   initStartMenu() {
-    const tiles = document.getElementById('start-tiles');
-    const apps = [
-      { id: 'rqbbox', icon: '🎮', label: 'RQBBOX MODE', color: 'green' },
-      { id: 'rqbboxlife', icon: '🧬', label: 'RQBBOX LIFE', color: 'teal' },
-      { id: 'explorer', icon: '📁', label: 'File Explorer', color: 'blue' },
-      { id: 'notepad', icon: '📝', label: 'Notepad', color: 'dark' },
-      { id: 'calculator', icon: '🔢', label: 'Calculator', color: 'dark' },
-      { id: 'terminal', icon: '💻', label: 'Terminal', color: 'dark' },
-      { id: 'browser', icon: '🌐', label: 'Edge', color: 'blue' },
-      { id: 'settings', icon: '⚙️', label: 'Settings', color: 'dark' },
-      { id: 'photos', icon: '🖼️', label: 'Photos', color: 'dark' },
-      { id: 'music', icon: '🎵', label: 'Music', color: 'purple' },
-      { id: 'weather', icon: '🌤️', label: 'Weather', color: 'teal' },
-      { id: 'maps', icon: '🗺️', label: 'Maps', color: 'green' },
-      { id: 'store', icon: '🛒', label: 'Store', color: 'green' },
-      { id: 'about', icon: 'ℹ️', label: 'About RBOWS', color: 'blue' },
-    ];
-    apps.forEach(a => {
-      const tile = document.createElement('div');
-      tile.className = 'start-tile ' + a.color;
-      tile.innerHTML = `<span class="tile-icon">${a.icon}</span><span class="tile-label">${a.label}</span>`;
-      tile.onclick = () => { this.openApp(a.id); this.toggleStartMenu(); };
-      tiles.appendChild(tile);
-    });
+    this.updateStartMenu();
 
     document.getElementById('start-settings-btn').onclick = (e) => {
       e.stopPropagation();
@@ -521,28 +498,7 @@ const OS = {
 
   // ========== DESKTOP ==========
   initDesktop() {
-    const icons = document.getElementById('desktop-icons');
-    const desktopItems = [
-      { id: 'rqbbox', icon: '🎮', label: 'RQBBOX MODE' },
-      { id: 'explorer', icon: '📁', label: 'This PC' },
-      { id: 'recycle', icon: '🗑️', label: 'Recycle Bin' },
-      { id: 'terminal', icon: '💻', label: 'Terminal' },
-      { id: 'browser', icon: '🌐', label: 'Edge' },
-      { id: 'notepad', icon: '📝', label: 'Notepad' },
-      { id: 'about', icon: 'ℹ️', label: 'About RBOWS' },
-    ];
-    desktopItems.forEach(item => {
-      const el = document.createElement('div');
-      el.className = 'desktop-icon';
-      el.innerHTML = `<div class="icon-placeholder">${item.icon}</div><span>${item.label}</span>`;
-      el.ondblclick = () => this.openApp(item.id);
-      el.onclick = (e) => {
-        document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
-        el.classList.add('selected');
-        e.stopPropagation();
-      };
-      icons.appendChild(el);
-    });
+    this.updateDesktopIcons();
 
     document.getElementById('desktop').oncontextmenu = (e) => {
       e.preventDefault();
@@ -884,6 +840,15 @@ const OS = {
     const apps = {
       rqbbox: () => this.openRqbbox(),
       rqbboxlife: () => this.openRqbboxLife(),
+      'neon-drift': () => this.openWebApp('Neon Drift Racing', '🏎️', 'https://rtech-rqbbox-os.github.io/RQBBOX-MODE/games/neon-drift-racing/'),
+      'pixel-quest': () => this.openWebApp('Pixel Quest', '⚔️', 'https://rtech-rqbbox-os.github.io/RQBBOX-MODE/games/pixel-quest/'),
+      'star-fighter': () => this.openWebApp('Star Fighter X', '🚀', 'https://rtech-rqbbox-os.github.io/RQBBOX-MODE/games/star-fighter-x/'),
+      retrzone: () => this.openWebApp('RetrZone', '🕹️', 'https://rtech-rqbbox-os.github.io/RQBBOX-MODE/games/retrzone/'),
+      discord: () => this.openWebApp('Discord', '💬', 'https://discord.com/app'),
+      spotify: () => this.openWebApp('Spotify', '🎵', 'https://open.spotify.com'),
+      youtube: () => this.openWebApp('YouTube', '📺', 'https://youtube.com'),
+      github: () => this.openWebApp('GitHub', '🐙', 'https://github.com'),
+      chatgpt: () => this.openWebApp('ChatGPT', '🤖', 'https://chat.openai.com'),
       explorer: () => this.openExplorer(),
       notepad: () => this.openNotepad(),
       calculator: () => this.openCalculator(),
@@ -905,6 +870,38 @@ const OS = {
     w.el.querySelector('.window-body').innerHTML = body;
   },
 
+  // ========== WEB APP (iframe with fallback) ==========
+  openWebApp(title, icon, url) {
+    const w = this.createWindow({ title, icon, appId: title.toLowerCase().replace(/\s/g,'-'), width: 1000, height: 650 });
+    const body = w.el.querySelector('.window-body');
+    body.style.padding = '0';
+    body.style.background = '#111';
+
+    body.innerHTML = `
+      <div style="height:100%;display:flex;flex-direction:column">
+        <div style="height:36px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:8px">
+          <span style="font-size:14px">${icon}</span>
+          <span style="font-size:12px;color:var(--text-secondary);flex:1">${title}</span>
+          <button style="padding:4px 12px;background:var(--accent);color:#fff;border:none;border-radius:3px;cursor:pointer;font-size:11px" onclick="window.open('${url}','_blank')">↗ Open in Tab</button>
+        </div>
+        <iframe src="${url}" style="flex:1;border:none;background:#fff" sandbox="allow-same-origin allow-scripts allow-forms allow-popups" loading="lazy"></iframe>
+      </div>
+    `;
+
+    // Handle iframe load error
+    const iframe = body.querySelector('iframe');
+    iframe.onerror = () => {
+      body.innerHTML = `
+        <div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#111;color:#fff;padding:40px;text-align:center">
+          <div style="font-size:48px;margin-bottom:16px">${icon}</div>
+          <div style="font-size:18px;font-weight:600;margin-bottom:8px">${title}</div>
+          <div style="font-size:13px;color:#888;margin-bottom:24px">This app can't be loaded in an embedded window.</div>
+          <a href="${url}" target="_blank" style="padding:10px 24px;background:var(--accent);color:#fff;text-decoration:none;border-radius:4px;font-size:14px">Open ${title} ↗</a>
+        </div>
+      `;
+    };
+  },
+
   // ========== RQBBOX MODE ==========
   openRqbbox() {
     const w = this.createWindow({
@@ -917,41 +914,32 @@ const OS = {
     const body = w.el.querySelector('.window-body');
     body.style.padding = '0';
     body.style.background = '#0a0a0a';
-
-    // Loading state
     body.innerHTML = `
-      <div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0a0a0a;color:#fff">
-        <div style="font-size:48px;margin-bottom:16px">🎮</div>
-        <div style="font-size:20px;font-weight:600;margin-bottom:8px;background:linear-gradient(135deg,#107c10,#00ff88);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">RQBBOX MODE</div>
-        <div style="font-size:13px;color:#666;margin-bottom:24px">Loading gaming dashboard...</div>
-        <div style="width:200px;height:2px;background:#222;border-radius:1px;overflow:hidden">
-          <div style="height:100%;width:0;background:#107c10;transition:width .3s" id="rqbbox-load-${w.id}"></div>
+      <div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0a0a0a;color:#fff;font-family:Segoe UI,system-ui,sans-serif">
+        <div style="font-size:64px;margin-bottom:20px">🎮</div>
+        <div style="font-size:28px;font-weight:700;margin-bottom:4px;background:linear-gradient(135deg,#107c10,#00ff88);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">RQBBOX MODE</div>
+        <div style="font-size:13px;color:#888;margin-bottom:32px">Xbox-style Gaming Dashboard</div>
+        <div style="display:flex;gap:12px;margin-bottom:32px">
+          <div style="padding:12px 24px;background:linear-gradient(135deg,#107c10,#0d5c0d);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;font-weight:600" onclick="window.open('https://rtech-rqbbox-os.github.io/RQBBOX-MODE/dashboard.html','_blank')">▶ Launch Full Screen</div>
+          <div style="padding:12px 24px;background:rgba(255,255,255,.08);color:#ccc;border:1px solid rgba(255,255,255,.15);border-radius:4px;cursor:pointer;font-size:14px" onclick="window.open('https://rtech-rqbbox-os.github.io/RQBBOX-MODE/','_blank')">Open in Tab</div>
         </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:500px;width:100%">
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:16px;text-align:center">
+            <div style="font-size:24px;margin-bottom:4px">🕹️</div>
+            <div style="font-size:11px;color:#888">7 Games</div>
+          </div>
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:16px;text-align:center">
+            <div style="font-size:24px;margin-bottom:4px">🏆</div>
+            <div style="font-size:11px;color:#888">Achievements</div>
+          </div>
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:16px;text-align:center">
+            <div style="font-size:24px;margin-bottom:4px">⚡</div>
+            <div style="font-size:11px;color:#888">Quick Resume</div>
+          </div>
+        </div>
+        <div style="margin-top:24px;font-size:11px;color:#555">Part of RQBBOX OS ecosystem</div>
       </div>
     `;
-
-    // Animate loading bar
-    const loadBar = body.querySelector(`#rqbbox-load-${w.id}`);
-    let progress = 0;
-    const loadInterval = setInterval(() => {
-      progress += Math.random() * 20 + 10;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(loadInterval);
-        // Load the actual RQBBOX MODE dashboard
-        body.innerHTML = '';
-        const iframe = document.createElement('iframe');
-        iframe.src = 'https://rtech-rqbbox-os.github.io/RQBBOX-MODE/dashboard.html';
-        iframe.style.cssText = 'width:100%;height:100%;border:none;background:#0a0a0a';
-        iframe.onload = () => {
-          try {
-            iframe.contentWindow.postMessage({ type: 'rqbbox-init' }, '*');
-          } catch(e) {}
-        };
-        body.appendChild(iframe);
-      }
-      loadBar.style.width = progress + '%';
-    }, 200);
   },
 
   // ========== RQBBOX LIFE ==========
@@ -966,34 +954,35 @@ const OS = {
     const body = w.el.querySelector('.window-body');
     body.style.padding = '0';
     body.style.background = '#080818';
-
-    // Loading state
     body.innerHTML = `
-      <div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#080818;color:#fff">
-        <div style="font-size:48px;margin-bottom:16px">🧬</div>
-        <div style="font-size:20px;font-weight:600;margin-bottom:8px;background:linear-gradient(135deg,#00d4ff,#00ff88);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">RQBBOX LIFE</div>
-        <div style="font-size:13px;color:#666;margin-bottom:24px">Loading life simulation...</div>
-        <div style="width:200px;height:2px;background:#222;border-radius:1px;overflow:hidden">
-          <div style="height:100%;width:0;background:#00d4ff;transition:width .3s" id="life-load-${w.id}"></div>
+      <div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#080818,#0a1628);color:#fff;font-family:Segoe UI,system-ui,sans-serif">
+        <div style="font-size:64px;margin-bottom:20px">🧬</div>
+        <div style="font-size:28px;font-weight:700;margin-bottom:4px;background:linear-gradient(135deg,#00d4ff,#00ff88);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">RQBBOX LIFE</div>
+        <div style="font-size:13px;color:#888;margin-bottom:32px">Neon Life Simulation</div>
+        <div style="display:flex;gap:12px;margin-bottom:32px">
+          <div style="padding:12px 24px;background:linear-gradient(135deg,#00d4ff,#0088cc);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;font-weight:600" onclick="window.open('https://rtech-rqbbox-os.github.io/rqbbox-life/game/index.html','_blank')">▶ Play Now</div>
+          <div style="padding:12px 24px;background:rgba(255,255,255,.08);color:#ccc;border:1px solid rgba(255,255,255,.15);border-radius:4px;cursor:pointer;font-size:14px" onclick="window.open('https://rtech-rqbbox-os.github.io/rqbbox-life/','_blank')">Open in Tab</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:450px;width:100%">
+          <div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.1);border-radius:8px;padding:12px;text-align:center">
+            <div style="font-size:20px;margin-bottom:2px">💼</div>
+            <div style="font-size:10px;color:#888">10 Jobs</div>
+          </div>
+          <div style="background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.1);border-radius:8px;padding:12px;text-align:center">
+            <div style="font-size:20px;margin-bottom:2px">🏠</div>
+            <div style="font-size:10px;color:#888">6 Homes</div>
+          </div>
+          <div style="background:rgba(255,0,128,.06);border:1px solid rgba(255,0,128,.1);border-radius:8px;padding:12px;text-align:center">
+            <div style="font-size:20px;margin-bottom:2px">🚗</div>
+            <div style="font-size:10px;color:#888">7 Vehicles</div>
+          </div>
+          <div style="background:rgba(136,68,255,.06);border:1px solid rgba(136,68,255,.1);border-radius:8px;padding:12px;text-align:center">
+            <div style="font-size:20px;margin-bottom:2px">👥</div>
+            <div style="font-size:10px;color:#888">Social</div>
+          </div>
         </div>
       </div>
     `;
-
-    const loadBar = body.querySelector(`#life-load-${w.id}`);
-    let progress = 0;
-    const loadInterval = setInterval(() => {
-      progress += Math.random() * 20 + 10;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(loadInterval);
-        body.innerHTML = '';
-        const iframe = document.createElement('iframe');
-        iframe.src = 'https://rtech-rqbbox-os.github.io/rqbbox-life/game/index.html';
-        iframe.style.cssText = 'width:100%;height:100%;border:none;background:#080818';
-        body.appendChild(iframe);
-      }
-      loadBar.style.width = progress + '%';
-    }, 200);
   },
 
   // ========== FILE EXPLORER ==========
@@ -1474,47 +1463,261 @@ const OS = {
 
   // ========== STORE ==========
   openStore() {
-    const w = this.createWindow({ title: 'Store', icon: '🛒', appId: 'store', width: 900, height: 600 });
+    const w = this.createWindow({ title: 'Store', icon: '🛒', appId: 'store', width: 960, height: 640 });
     const body = w.el.querySelector('.window-body');
-    const apps = [
-      { name: 'RQBBOX MODE', icon: '🎮', desc: 'Xbox-style gaming dashboard', rating: '⭐ 4.8' },
-      { name: 'RQBBOX LIFE', icon: '🧬', desc: 'Life simulation game', rating: '⭐ 4.9' },
-      { name: 'Discord', icon: '💬', desc: 'Chat with friends', rating: '⭐ 4.7' },
-      { name: 'Spotify', icon: '🎵', desc: 'Music streaming', rating: '⭐ 4.6' },
-      { name: 'VS Code', icon: '📝', desc: 'Code editor', rating: '⭐ 4.9' },
-      { name: 'OBS Studio', icon: '🎥', desc: 'Streaming & recording', rating: '⭐ 4.8' },
-      { name: 'Steam', icon: '🎮', desc: 'Game launcher', rating: '⭐ 4.5' },
-      { name: 'VLC', icon: '🎬', desc: 'Media player', rating: '⭐ 4.7' },
+
+    const storeApps = [
+      { id: 'rqbbox', name: 'RQBBOX MODE', icon: '🎮', desc: 'Xbox-style gaming dashboard with 7 built-in games, achievements, and Quick Resume', rating: '⭐ 4.8', category: 'Gaming', url: 'https://rtech-rqbbox-os.github.io/RQBBOX-MODE/dashboard.html', featured: true, color: '#107c10' },
+      { id: 'rqbboxlife', name: 'RQBBOX LIFE', icon: '🧬', desc: 'Neon life simulation — build your career, home, and relationships in RQBBOX City', rating: '⭐ 4.9', category: 'Gaming', url: 'https://rtech-rqbbox-os.github.io/rqbbox-life/game/index.html', featured: true, color: '#00d4ff' },
+      { id: 'rbows1', name: 'RBOWS 1', icon: '🖥️', desc: 'Windows 10 desktop environment — file explorer, terminal, settings, and more', rating: '⭐ 4.7', category: 'Productivity', url: 'https://rtech-rqbbox-os.github.io/RBOWS-1/', featured: false, color: '#0078d4' },
+      { id: 'neon-drift', name: 'Neon Drift Racing', icon: '🏎️', desc: 'High-speed neon racing through cyberpunk streets', rating: '⭐ 4.6', category: 'Gaming', url: 'https://rtech-rqbbox-os.github.io/RQBBOX-MODE/games/neon-drift-racing/', featured: false, color: '#ff0080' },
+      { id: 'pixel-quest', name: 'Pixel Quest', icon: '⚔️', desc: 'Retro pixel-art adventure through mystical lands', rating: '⭐ 4.5', category: 'Gaming', url: 'https://rtech-rqbbox-os.github.io/RQBBOX-MODE/games/pixel-quest/', featured: false, color: '#8844ff' },
+      { id: 'star-fighter', name: 'Star Fighter X', icon: '🚀', desc: 'Space combat simulator with intense dogfights', rating: '⭐ 4.7', category: 'Gaming', url: 'https://rtech-rqbbox-os.github.io/RQBBOX-MODE/games/star-fighter-x/', featured: false, color: '#00d4ff' },
+      { id: 'retrzone', name: 'RetrZone', icon: '🕹️', desc: 'Classic arcade breakout game', rating: '⭐ 4.4', category: 'Gaming', url: 'https://rtech-rqbbox-os.github.io/RQBBOX-MODE/games/retrzone/', featured: false, color: '#ffdd00' },
+      { id: 'discord', name: 'Discord', icon: '💬', desc: 'Chat with friends and communities', rating: '⭐ 4.7', category: 'Social', url: 'https://discord.com/app', featured: false, color: '#5865F2' },
+      { id: 'spotify', name: 'Spotify', icon: '🎵', desc: 'Music streaming service', rating: '⭐ 4.6', category: 'Entertainment', url: 'https://open.spotify.com', featured: false, color: '#1DB954' },
+      { id: 'youtube', name: 'YouTube', icon: '📺', desc: 'Video streaming platform', rating: '⭐ 4.8', category: 'Entertainment', url: 'https://youtube.com', featured: false, color: '#FF0000' },
+      { id: 'github', name: 'GitHub', icon: '🐙', desc: 'Code hosting platform', rating: '⭐ 4.9', category: 'Productivity', url: 'https://github.com', featured: false, color: '#333' },
+      { id: 'chatgpt', name: 'ChatGPT', icon: '🤖', desc: 'AI assistant by OpenAI', rating: '⭐ 4.8', category: 'Productivity', url: 'https://chat.openai.com', featured: false, '#10a37f' },
     ];
-    body.innerHTML = `
-      <div style="height:100%;background:var(--bg);padding:24px;overflow-y:auto">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
-          <h2 style="font-size:24px;font-weight:300">Store</h2>
-          <div style="display:flex;gap:8px">
-            <div style="padding:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer">Home</div>
-            <div style="padding:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer">Apps</div>
-            <div style="padding:6px 16px;background:var(--surface);border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer">Gaming</div>
+
+    let installed = JSON.parse(localStorage.getItem('rbows-installed') || '[]');
+    let activeTab = 'home';
+    let searchQuery = '';
+
+    function render() {
+      const filtered = storeApps.filter(a => {
+        if (searchQuery) return a.name.toLowerCase().includes(searchQuery.toLowerCase()) || a.desc.toLowerCase().includes(searchQuery.toLowerCase());
+        if (activeTab === 'apps') return a.category !== 'Gaming';
+        if (activeTab === 'gaming') return a.category === 'Gaming';
+        return true;
+      });
+
+      body.innerHTML = `
+        <div style="height:100%;display:flex;flex-direction:column;background:var(--bg)">
+          <!-- Header -->
+          <div style="padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px">
+            <div style="font-size:18px;font-weight:600">🛒 Store</div>
+            <div style="flex:1;max-width:400px;height:32px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:4px;display:flex;align-items:center;padding:0 12px;gap:8px">
+              <span style="opacity:.4">🔍</span>
+              <input id="store-search-${w.id}" style="flex:1;background:transparent;border:none;color:var(--text);font-size:12px;outline:none" placeholder="Search apps and games..." value="${searchQuery}">
+            </div>
+            <div style="display:flex;gap:4px;margin-left:auto">
+              ${['home','apps','gaming'].map(tab => `
+                <div class="store-tab" data-tab="${tab}" style="padding:6px 16px;border-radius:4px;font-size:12px;cursor:pointer;transition:all .15s;${activeTab === tab ? 'background:var(--accent);color:#fff' : 'color:var(--text-secondary);background:rgba(255,255,255,.04)'}">
+                  ${tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div style="flex:1;overflow-y:auto;padding:24px">
+            ${activeTab === 'home' ? `
+              <!-- Featured -->
+              ${storeApps.filter(a => a.featured).map(a => `
+                <div style="background:linear-gradient(135deg,${a.color || 'var(--accent)'},${a.color || 'var(--accent)'}88);border-radius:8px;padding:32px;margin-bottom:24px;color:#fff;display:flex;align-items:center;gap:24px">
+                  <div style="font-size:64px">${a.icon}</div>
+                  <div style="flex:1">
+                    <div style="font-size:11px;letter-spacing:2px;opacity:.6;margin-bottom:4px">FEATURED</div>
+                    <div style="font-size:24px;font-weight:700;margin-bottom:4px">${a.name}</div>
+                    <div style="font-size:13px;opacity:.7;margin-bottom:12px">${a.desc}</div>
+                    <div style="display:flex;gap:8px;align-items:center">
+                      ${installed.includes(a.id) ? `
+                        <button class="store-launch-btn" data-app="${a.id}" style="padding:8px 20px;background:#fff;color:${a.color};border:none;border-radius:4px;cursor:pointer;font-weight:600;font-size:13px">Launch</button>
+                        <button class="store-uninstall-btn" data-app="${a.id}" style="padding:8px 16px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:4px;cursor:pointer;font-size:13px">Uninstall</button>
+                      ` : `
+                        <button class="store-install-btn" data-app="${a.id}" style="padding:8px 20px;background:#fff;color:${a.color};border:none;border-radius:4px;cursor:pointer;font-weight:600;font-size:13px">Get</button>
+                      `}
+                      <span style="font-size:12px;opacity:.6">${a.rating}</span>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            ` : ''}
+
+            <!-- App Grid -->
+            <h3 style="font-size:14px;margin-bottom:16px;color:var(--text-secondary)">${activeTab === 'home' ? 'All Apps' : activeTab === 'gaming' ? 'Games' : 'Apps'}</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
+              ${filtered.map(a => `
+                <div class="store-card" data-app="${a.id}" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;transition:all .2s;cursor:pointer">
+                  <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
+                    <div style="width:48px;height:48px;border-radius:12px;background:${a.color || '#333'}22;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${a.icon}</div>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:14px;font-weight:600;margin-bottom:2px">${a.name}</div>
+                      <div style="font-size:11px;color:var(--text-dim)">${a.category}</div>
+                    </div>
+                    ${installed.includes(a.id) ? '<div style="font-size:10px;color:#107c10;background:rgba(16,124,16,.15);padding:2px 8px;border-radius:10px">Installed</div>' : ''}
+                  </div>
+                  <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px">${a.desc}</div>
+                  <div style="display:flex;align-items:center;justify-content:space-between">
+                    <span style="font-size:12px;color:var(--text-dim)">${a.rating}</span>
+                    ${installed.includes(a.id) ? `
+                      <div style="display:flex;gap:6px">
+                        <button class="store-launch-btn" data-app="${a.id}" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px">Launch</button>
+                        <button class="store-uninstall-btn" data-app="${a.id}" style="padding:6px 10px;background:rgba(255,255,255,.06);color:var(--text-secondary);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:12px">✕</button>
+                      </div>
+                    ` : `
+                      <button class="store-install-btn" data-app="${a.id}" style="padding:6px 16px;background:rgba(0,120,212,.15);color:var(--accent);border:1px solid rgba(0,120,212,.3);border-radius:4px;cursor:pointer;font-size:12px;font-weight:500">Get</button>
+                    `}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
           </div>
         </div>
-        <div style="background:linear-gradient(135deg,var(--accent),#004e8c);border-radius:8px;padding:32px;margin-bottom:24px;color:#fff">
-          <div style="font-size:11px;letter-spacing:2px;margin-bottom:8px">FEATURED</div>
-          <div style="font-size:28px;font-weight:600;margin-bottom:8px">🎮 RQBBOX MODE</div>
-          <div style="font-size:14px;opacity:.7;margin-bottom:16px">The ultimate Xbox-style gaming dashboard. Full-screen kiosk mode, Quick Resume, and 7 built-in games.</div>
-          <button style="padding:8px 24px;background:#fff;color:var(--accent);border:none;border-radius:4px;cursor:pointer;font-weight:600">Get</button>
-        </div>
-        <h3 style="font-size:14px;margin-bottom:16px">Popular apps</h3>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
-          ${apps.map(a => `
-            <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
-              <div style="font-size:32px;margin-bottom:8px">${a.icon}</div>
-              <div style="font-size:13px;font-weight:600">${a.name}</div>
-              <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${a.desc}</div>
-              <div style="font-size:11px;color:var(--text-dim);margin-top:8px">${a.rating}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
+      `;
+
+      // Tab clicks
+      body.querySelectorAll('.store-tab').forEach(tab => {
+        tab.onclick = () => { activeTab = tab.dataset.tab; render(); };
+      });
+
+      // Search
+      const searchInput = body.querySelector(`#store-search-${w.id}`);
+      if (searchInput) {
+        searchInput.oninput = () => { searchQuery = searchInput.value; render(); };
+        searchInput.style.userSelect = 'text';
+      }
+
+      // Install buttons
+      body.querySelectorAll('.store-install-btn').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const appId = btn.dataset.app;
+          if (!installed.includes(appId)) {
+            installed.push(appId);
+            localStorage.setItem('rbows-installed', JSON.stringify(installed));
+            OS.installApp(appId);
+            OS.showNotification('Store', `${storeApps.find(a => a.id === appId)?.name} installed!`);
+            render();
+          }
+        };
+      });
+
+      // Launch buttons
+      body.querySelectorAll('.store-launch-btn').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          OS.openApp(btn.dataset.app);
+        };
+      });
+
+      // Uninstall buttons
+      body.querySelectorAll('.store-uninstall-btn').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const appId = btn.dataset.app;
+          installed = installed.filter(id => id !== appId);
+          localStorage.setItem('rbows-installed', JSON.stringify(installed));
+          OS.uninstallApp(appId);
+          OS.showNotification('Store', `${storeApps.find(a => a.id === appId)?.name} uninstalled`);
+          render();
+        };
+      });
+
+      // Card hover
+      body.querySelectorAll('.store-card').forEach(card => {
+        card.onmouseenter = () => card.style.borderColor = 'rgba(0,120,212,.4)';
+        card.onmouseleave = () => card.style.borderColor = 'var(--border)';
+      });
+    }
+
+    render();
+  },
+
+  // ========== APP MANAGEMENT ==========
+  installApp(appId) {
+    this.updateDesktopIcons();
+    this.updateStartMenu();
+  },
+
+  uninstallApp(appId) {
+    // Close any open windows of this app
+    this.windows.filter(w => w.appId === appId).forEach(w => this.closeWindow(w.id));
+    this.updateDesktopIcons();
+    this.updateStartMenu();
+  },
+
+  updateDesktopIcons() {
+    const icons = document.getElementById('desktop-icons');
+    icons.innerHTML = '';
+    const installed = JSON.parse(localStorage.getItem('rbows-installed') || '[]');
+    const appDefs = [
+      { id: 'rqbbox', icon: '🎮', label: 'RQBBOX MODE' },
+      { id: 'rqbboxlife', icon: '🧬', label: 'RQBBOX LIFE' },
+      { id: 'neon-drift', icon: '🏎️', label: 'Neon Drift' },
+      { id: 'pixel-quest', icon: '⚔️', label: 'Pixel Quest' },
+      { id: 'star-fighter', icon: '🚀', label: 'Star Fighter' },
+      { id: 'retrzone', icon: '🕹️', label: 'RetrZone' },
+      { id: 'discord', icon: '💬', label: 'Discord' },
+      { id: 'spotify', icon: '🎵', label: 'Spotify' },
+      { id: 'youtube', icon: '📺', label: 'YouTube' },
+      { id: 'github', icon: '🐙', label: 'GitHub' },
+      { id: 'chatgpt', icon: '🤖', label: 'ChatGPT' },
+    ];
+    const desktopItems = [
+      ...appDefs.filter(a => installed.includes(a.id)),
+      { id: 'explorer', icon: '📁', label: 'This PC' },
+      { id: 'recycle', icon: '🗑️', label: 'Recycle Bin' },
+      { id: 'terminal', icon: '💻', label: 'Terminal' },
+      { id: 'browser', icon: '🌐', label: 'Edge' },
+      { id: 'store', icon: '🛒', label: 'Store' },
+      { id: 'about', icon: 'ℹ️', label: 'About RBOWS' },
+    ];
+    desktopItems.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'desktop-icon';
+      el.innerHTML = `<div class="icon-placeholder">${item.icon}</div><span>${item.label}</span>`;
+      el.ondblclick = () => this.openApp(item.id);
+      el.onclick = (e) => {
+        document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+        e.stopPropagation();
+      };
+      icons.appendChild(el);
+    });
+  },
+
+  updateStartMenu() {
+    const tiles = document.getElementById('start-tiles');
+    tiles.innerHTML = '';
+    const installed = JSON.parse(localStorage.getItem('rbows-installed') || '[]');
+    const appDefs = [
+      { id: 'rqbbox', icon: '🎮', label: 'RQBBOX MODE', color: 'green' },
+      { id: 'rqbboxlife', icon: '🧬', label: 'RQBBOX LIFE', color: 'teal' },
+      { id: 'neon-drift', icon: '🏎️', label: 'Neon Drift', color: 'purple' },
+      { id: 'pixel-quest', icon: '⚔️', label: 'Pixel Quest', color: 'purple' },
+      { id: 'star-fighter', icon: '🚀', label: 'Star Fighter', color: 'blue' },
+      { id: 'retrzone', icon: '🕹️', label: 'RetrZone', color: 'orange' },
+      { id: 'discord', icon: '💬', label: 'Discord', color: 'blue' },
+      { id: 'spotify', icon: '🎵', label: 'Spotify', color: 'green' },
+      { id: 'youtube', icon: '📺', label: 'YouTube', color: 'dark' },
+      { id: 'github', icon: '🐙', label: 'GitHub', color: 'dark' },
+      { id: 'chatgpt', icon: '🤖', label: 'ChatGPT', color: 'teal' },
+    ];
+    const builtinApps = [
+      { id: 'explorer', icon: '📁', label: 'File Explorer', color: 'blue' },
+      { id: 'notepad', icon: '📝', label: 'Notepad', color: 'dark' },
+      { id: 'calculator', icon: '🔢', label: 'Calculator', color: 'dark' },
+      { id: 'terminal', icon: '💻', label: 'Terminal', color: 'dark' },
+      { id: 'browser', icon: '🌐', label: 'Edge', color: 'blue' },
+      { id: 'settings', icon: '⚙️', label: 'Settings', color: 'dark' },
+      { id: 'weather', icon: '🌤️', label: 'Weather', color: 'teal' },
+      { id: 'store', icon: '🛒', label: 'Store', color: 'green' },
+      { id: 'about', icon: 'ℹ️', label: 'About RBOWS', color: 'blue' },
+    ];
+    const allApps = [
+      ...appDefs.filter(a => installed.includes(a.id)),
+      ...builtinApps
+    ];
+    allApps.forEach(a => {
+      const tile = document.createElement('div');
+      tile.className = 'start-tile ' + a.color;
+      tile.innerHTML = `<span class="tile-icon">${a.icon}</span><span class="tile-label">${a.label}</span>`;
+      tile.onclick = () => { this.openApp(a.id); this.toggleStartMenu(); };
+      tiles.appendChild(tile);
+    });
   },
 
   // ========== ABOUT ==========
