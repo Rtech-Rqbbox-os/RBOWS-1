@@ -5,3 +5,6 @@ Desktop.ini
 *.swo
 *~
 node_modules/
+dist/
+build/icon.ico
+package-lock.json
