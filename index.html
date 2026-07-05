@@ -1998,7 +1998,11 @@ Available Physical Memory: 8,192 MB</span>`;
 };
 
 // ========== INIT ==========
-window.onload = () => OS.init();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => OS.init());
+} else {
+  OS.init();
+}
 </script>
 </body>
 </html>
