@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://rtech-rqbbox-os.github.io/RBOWS-1/sitemap.xml
